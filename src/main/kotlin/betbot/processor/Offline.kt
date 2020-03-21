@@ -5,6 +5,7 @@ import betbot.database.Database
 import betbot.message.StdoutHandler
 import betbot.message.User
 import betbot.message.Valid
+import betbot.message.loadMessage
 
 class Offline: MessageProcessor {
     private val dispatcher = Dispatcher(Database("offline_db.txt"))
@@ -19,7 +20,7 @@ class Offline: MessageProcessor {
             try {
                 val user = line.substringBefore(' ')
                 val msg = line.substringAfter(' ')
-                dispatcher.process(Valid(User(user), msg, StdoutHandler))
+                dispatcher.process(loadMessage(User(user), msg, StdoutHandler))
             } catch (e: Exception) {
                 println("You caused an error: ${e.message}")
                 println(syntax)
