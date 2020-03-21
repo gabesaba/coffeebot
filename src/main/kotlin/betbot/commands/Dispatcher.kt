@@ -21,9 +21,10 @@ class Dispatcher(private val db: Database?) {
     init {
         this.register(ping)
                 .register(bet)
-                .register(cancel)
                 .register(accept)
+                .register(cancel)
                 .register(list)
+                .register(source)
                 .register(help)
         this.loadDb()
     }
