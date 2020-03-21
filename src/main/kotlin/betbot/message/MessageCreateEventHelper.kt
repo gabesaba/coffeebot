@@ -25,7 +25,6 @@ fun MessageCreateEvent.toBetBotMessage(): Message {
     return loadMessage(user, contents, DiscordHandle(this))
 }
 
-
 fun MessageCreateEvent.getUser(): User? {
     return this.message.author.orElse(null)?.username?.let { User(it) }
 }
