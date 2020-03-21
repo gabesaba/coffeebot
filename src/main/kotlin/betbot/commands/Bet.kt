@@ -108,9 +108,13 @@ val accept = Command("!accept", "Accept a bet") { message ->
 }
 
 val list = Command("!list", "List bets") {message ->
-    val activeStr = active.joinToString("\n")
-    val proposalsStr = proposals.values.joinToString("\n")
+    val activeStr = active.joinToString("\n") { "\t$it" }
+    val proposalsStr = proposals.values.joinToString("\n") { "\t$it" }
 
-    val reply = "Num Active Bets: ${active.size}\nNum Proposals: ${proposals.size}\n$activeStr\n$proposalsStr"
+    val reply = "Num Active Bets: ${active.size}\n$activeStr\n" +
+            "Num Proposals: ${proposals.size}\n$proposalsStr\n"
+    // TODO: Add completed bets once !reckon is added
     message.reply(reply)
 }
+
+// TODO: Add !reckon command to have a third party adjudicate bets
