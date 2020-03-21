@@ -1,7 +1,7 @@
 package betbot.commands
 
-import betbot.User
-import betbot.Valid
+import betbot.message.User
+import betbot.message.Valid
 
 private val betRegex = Regex("!bet ([0-9]+) that (.*)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
@@ -41,7 +41,7 @@ val bet = Command("!bet", "Initiate a bet") { message ->
     }
 
     // TODO: Add unit test to make sure this handles overflow
-    val amount = groups[1].toIntOrNull()?: 0
+    val amount = groups[1].toIntOrNull() ?: 0
 
     if (amount > 7) {
         message.reply("Keep it casual.. That bet's too big!")
@@ -76,7 +76,7 @@ val cancel = Command("!cancel", "Cancel a bet") { message ->
 
     val proposal = groups[1].getProposal()
 
-    when  {
+    when {
         proposal == null -> message.invalidId()
         proposal.requester != message.user -> message.reply("Away hacker!")
         else -> {
@@ -107,7 +107,7 @@ val accept = Command("!accept", "Accept a bet") { message ->
     }
 }
 
-val list = Command("!list", "List bets") {message ->
+val list = Command("!list", "List bets") { message ->
     val activeStr = active.joinToString("\n") { "\t$it" }
     val proposalsStr = proposals.values.joinToString("\n") { "\t$it" }
 
