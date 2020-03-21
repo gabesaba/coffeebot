@@ -8,7 +8,7 @@ interface Handle {
 
 class StdoutHandle: Handle {
     override fun sendMessage(message: String) {
-        println(message)
+        println("BetBot: $message")
     }
 }
 

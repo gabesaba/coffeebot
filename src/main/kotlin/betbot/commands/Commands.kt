@@ -27,6 +27,7 @@ fun registerAllCommands() {
     list.register()
     help.register()
 }
+
 fun dispatch(message: Valid) {
     if (!message.contents.startsWith("!")) {
         return
