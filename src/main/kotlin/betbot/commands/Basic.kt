@@ -8,3 +8,7 @@ val invalid = Command("!invalid",
 val ping = Command("!ping", "pong!") {
     it.reply("pong!")
 }
+
+val source = Command("!source", "Source Code") {
+    it.reply("https://github.com/gabesaba/betbot")
+}
