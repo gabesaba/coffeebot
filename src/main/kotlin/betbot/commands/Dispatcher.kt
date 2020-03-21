@@ -36,8 +36,8 @@ class Dispatcher(private val db: Database?) {
                 dispatch(message)
                 println("Successfully Processed!")
             }
-            is Ignored -> println("Ignored")
-            is Invalid -> println("Invalid")
+            is Ignored -> {}
+            is Invalid -> println("Invalid Message!!")
         }
     }
 
