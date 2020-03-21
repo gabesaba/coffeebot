@@ -1,7 +1,11 @@
 Discord bot for the Bar Cart Coffee Club
 
-Usage:
+Test Offline:
 ```bash
-$ ./gradlew installDist
-$ ./build/install/betbot/bin/betbot CLIENT_TOKEN
+$ ./betbot offline
+```
+
+Run:
+```bash
+$ ./betbot BOT_TOKEN
 ```
