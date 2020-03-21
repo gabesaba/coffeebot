@@ -9,3 +9,6 @@ build
 
 # Idea
 .idea/
+
+# DB
+*db.txt
