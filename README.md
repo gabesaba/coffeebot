@@ -1,0 +1,1 @@
+Discord bot for the Bar Cart Coffee Club
