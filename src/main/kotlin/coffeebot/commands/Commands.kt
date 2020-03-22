@@ -1,6 +1,6 @@
-package betbot.commands
+package coffeebot.commands
 
-import betbot.message.Valid
+import coffeebot.message.Valid
 
 class Command(private val invoke: String, private val helpString: String, val handle: (Valid) -> Unit) {
     fun matches(message: Valid): Boolean {

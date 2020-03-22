@@ -1,10 +1,10 @@
-package betbot.commands
+package coffeebot.commands
 
-import betbot.database.Database
-import betbot.message.Ignored
-import betbot.message.Invalid
-import betbot.message.Message
-import betbot.message.Valid
+import coffeebot.database.Database
+import coffeebot.message.Ignored
+import coffeebot.message.Invalid
+import coffeebot.message.Message
+import coffeebot.message.Valid
 
 // Each Discord server should probably get its own Dispatcher so it has its own state
 // TODO: Move state from Bet into here

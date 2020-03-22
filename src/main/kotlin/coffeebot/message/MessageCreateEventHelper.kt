@@ -1,4 +1,4 @@
-package betbot.message
+package coffeebot.message
 
 import discord4j.core.`object`.entity.MessageChannel
 import discord4j.core.event.domain.message.MessageCreateEvent
@@ -19,7 +19,7 @@ fun MessageCreateEvent.getChannel(): MessageChannel? {
     return message.channel.block()
 }
 
-fun MessageCreateEvent.toBetBotMessage(): Message {
+fun MessageCreateEvent.toCoffeeBotMessage(): Message {
     val user = this.getUser()
     val contents = this.getContents()
     return loadMessage(user, contents, DiscordHandle(this))

@@ -14,5 +14,5 @@ dependencies {
 }
 
 application {
-    mainClassName = "betbot.MainKt"
+    mainClassName = "coffeebot.MainKt"
 }
