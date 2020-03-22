@@ -1,4 +1,4 @@
-package betbot.commands
+package coffeebot.commands
 
 val invalid = Command("!invalid",
         "Invalid command. Invoked when no other command matches") {
@@ -10,5 +10,5 @@ val ping = Command("!ping", "pong!") {
 }
 
 val source = Command("!source", "Source Code") {
-    it.reply("https://github.com/gabesaba/betbot")
+    it.reply("https://github.com/gabesaba/coffeebot")
 }

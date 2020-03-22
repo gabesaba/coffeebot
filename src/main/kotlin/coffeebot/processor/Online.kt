@@ -1,8 +1,8 @@
-package betbot.processor
+package coffeebot.processor
 
-import betbot.commands.Dispatcher
-import betbot.database.Database
-import betbot.message.toBetBotMessage
+import coffeebot.commands.Dispatcher
+import coffeebot.database.Database
+import coffeebot.message.toCoffeeBotMessage
 import discord4j.common.close.CloseException
 import discord4j.core.DiscordClientBuilder
 import discord4j.core.event.domain.lifecycle.ReadyEvent
@@ -21,7 +21,7 @@ class Online(private val token: String) : MessageProcessor {
 
         client.eventDispatcher.on(MessageCreateEvent::class.java)
                 .subscribe {
-                    dispatcher.process(it.toBetBotMessage())
+                    dispatcher.process(it.toCoffeeBotMessage())
                 }
 
         println("Attempting to log on")
