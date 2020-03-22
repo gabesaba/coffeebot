@@ -11,14 +11,14 @@ fun getInts(exprs: List<Expression>, env: Env): Iterable<Int> {
         }
     }
 }
-val add = Fn { exprs, env ->
+val add = Fn("Add") { exprs, env ->
     Number(getInts(exprs, env).fold(0) { a, b -> a + b })
 }
 
-val sub = Fn { exprs, env ->
+val sub = Fn("Sub") { exprs, env ->
     Number(getInts(exprs, env).fold(0) { a, b -> a - b })
 }
 
-val mult = Fn { exprs, env ->
+val mul = Fn("Mul") { exprs, env ->
     Number(getInts(exprs, env).fold(1) { a, b -> a * b })
 }

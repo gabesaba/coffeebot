@@ -4,7 +4,7 @@ class Env {
     private val registry = mutableMapOf(
             "+" to add,
             "-" to sub,
-            "*" to mult
+            "*" to mul
     )
 
     fun find(symbol: String): LispType? {
