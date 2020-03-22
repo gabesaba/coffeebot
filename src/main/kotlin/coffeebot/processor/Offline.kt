@@ -1,11 +1,10 @@
-package betbot.processor
+package coffeebot.processor
 
-import betbot.commands.Dispatcher
-import betbot.database.Database
-import betbot.message.StdoutHandler
-import betbot.message.User
-import betbot.message.Valid
-import betbot.message.loadMessage
+import coffeebot.commands.Dispatcher
+import coffeebot.database.Database
+import coffeebot.message.StdoutHandler
+import coffeebot.message.User
+import coffeebot.message.loadMessage
 
 class Offline: MessageProcessor {
     private val dispatcher = Dispatcher(Database("offline_db.txt"))

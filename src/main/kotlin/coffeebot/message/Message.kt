@@ -1,9 +1,9 @@
-package betbot.message
+package coffeebot.message
 
 fun loadMessage(user: User?, contents: String?, handle: Handle): Message {
         return if (contents == null || user == null) {
             Invalid
-        } else if (!contents.startsWith('!') || "BetBot" == user.name) {
+        } else if (!contents.startsWith('!') || "CoffeeBot" == user.name) {
             Ignored
         } else {
             Valid(user, contents, handle)

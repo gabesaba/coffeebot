@@ -1,35 +1,33 @@
-package betbot.commands
+package coffeebot.commands
 
-import betbot.message.User
-import betbot.message.Valid
+import coffeebot.message.User
+import coffeebot.message.Valid
 
 private val betRegex = Regex("!bet ([0-9]+) that (.*)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 
-private val active = mutableListOf<ActiveBet>()
-private val proposals = mutableMapOf<String, BetProposal>()
+private val active = mutableListOf<Active>()
+private val proposals = mutableMapOf<String, Proposal>()
 private var currBet = 0
 
-// TODO: Make betting thread safe
-// TODO: Separate bets between different servers
 
-data class BetProposal(val requester: User, val betAmount: Int, val subject: String) {
+data class Proposal(val requester: User, val numCoffees: Int, val subject: String) {
 
     val id = currBet++.toString()
 
-    fun toActive(acceptor: User): ActiveBet {
-        return ActiveBet(this.requester, acceptor, this.betAmount, this.subject)
+    fun toActive(acceptor: User): Active {
+        return Active(this.requester, acceptor, this.numCoffees, this.subject)
     }
 
     override fun toString(): String {
-        return "${this.id}: ${this.requester} wants to bet ${this.betAmount} that ${this.subject}"
+        return "${this.id}: ${this.requester} wants to bet ${this.numCoffees} that ${this.subject}"
     }
 }
 
-data class ActiveBet(val requester: User, val acceptor: User, val betAmount: Int, val subject: String) {
+data class Active(val requester: User, val acceptor: User, val numCoffees: Int, val subject: String) {
     override fun toString(): String {
-        return "${this.requester} has bet ${this.acceptor} ${this.betAmount} that ${this.subject}"
+        return "${this.requester} has bet ${this.acceptor} ${this.numCoffees} that ${this.subject}"
     }
 }
 
@@ -51,13 +49,13 @@ val bet = Command("!bet", "Initiate a bet") { message ->
         return@Command
     }
 
-    val proposal = BetProposal(message.user, amount, groups[2])
+    val proposal = Proposal(message.user, amount, groups[2])
     proposals[proposal.id] = proposal
 
     message.reply("Type !accept ${proposal.id} to accept ${proposal.requester}'s bet")
 }
 
-private fun String.getProposal(): BetProposal? {
+private fun String.getProposal(): Proposal? {
     return proposals[this]
 }
 

@@ -1,4 +1,4 @@
-package betbot.message
+package coffeebot.message
 
 import discord4j.core.event.domain.message.MessageCreateEvent
 

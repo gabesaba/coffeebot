@@ -1,8 +1,8 @@
-package betbot.database
+package coffeebot.database
 
-import betbot.message.NullHandle
-import betbot.message.User
-import betbot.message.Valid
+import coffeebot.message.NullHandle
+import coffeebot.message.User
+import coffeebot.message.Valid
 import java.io.File
 
 class Database(fileName: String) {
