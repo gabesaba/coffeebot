@@ -3,7 +3,7 @@ package coffeebot.commands
 import coffeebot.message.User
 import coffeebot.message.Valid
 
-private val betRegex = Regex("!bet ([0-9]+) that (.*)")
+private val betRegex = Regex("!bet (a|one|two|three|[1-3]) (?:cups? of )?coffees? that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 
@@ -11,45 +11,55 @@ private val active = mutableListOf<Active>()
 private val proposals = mutableMapOf<String, Proposal>()
 private var currBet = 0
 
-
-data class Proposal(val requester: User, val numCoffees: Int, val subject: String) {
+data class Proposal(val requester: User, val coffee: Coffee, val subject: String) {
 
     val id = currBet++.toString()
 
     fun toActive(acceptor: User): Active {
-        return Active(this.requester, acceptor, this.numCoffees, this.subject)
+        return Active(this.requester, acceptor, this.coffee, this.subject)
     }
 
     override fun toString(): String {
-        return "${this.id}: ${this.requester} wants to bet ${this.numCoffees} that ${this.subject}"
+        return "${this.id}: ${this.requester} wants to bet ${this.coffee} that ${this.subject}"
     }
 }
 
-data class Active(val requester: User, val acceptor: User, val numCoffees: Int, val subject: String) {
+data class Active(val requester: User, val acceptor: User, val coffee: Coffee, val subject: String) {
     override fun toString(): String {
-        return "${this.requester} has bet ${this.acceptor} ${this.numCoffees} that ${this.subject}"
+        return "${this.requester} has bet ${this.acceptor} ${this.coffee} that ${this.subject}"
     }
 }
 
-val bet = Command("!bet", "Initiate a bet") { message ->
+data class Coffee(private val num: Int) {
+    override fun toString(): String {
+        return when (num) {
+            1 -> "a cup of coffee"
+            2 -> "two cups of coffee"
+            3 -> "three cups of coffee"
+            else -> throw IllegalStateException("Invalid num coffees")
+        }
+    }
+}
+
+val bet = Command("!bet", "Initiate a coffee bet") { message ->
     val groups = betRegex.matchEntire(message.contents)?.groupValues
     if (groups == null) {
-        message.reply("Invalid Syntax. Try: !bet NATURAL_NUM that CONTENTS_OF_BET")
+        message.reply("Invalid Syntax. Try: !bet (1-3) cup(s) of coffee that XYZ")
         return@Command
     }
 
-    // TODO: Add unit test to make sure this handles overflow
-    val amount = groups[1].toIntOrNull() ?: 0
+    val coffee = Coffee(when (groups[1]) {
+        "a", "1", "one"-> 1
+        "2", "two" -> 2
+        "3", "three" -> 3
+        else -> {
+            message.reply("Invalid num cups. Try a | two | three")
+            return@Command
+        }
+    })
 
-    if (amount > 7) {
-        message.reply("Keep it casual.. That bet's too big!")
-        return@Command
-    } else if (amount < 1) {
-        message.reply("Invalid bet")
-        return@Command
-    }
+    val proposal = Proposal(message.user, coffee, groups[2])
 
-    val proposal = Proposal(message.user, amount, groups[2])
     proposals[proposal.id] = proposal
 
     message.reply("Type !accept ${proposal.id} to accept ${proposal.requester}'s bet")
