@@ -1,5 +1,6 @@
 package coffeebot.commands
 
+import coffeebot.commands.lisp.lisp
 import coffeebot.database.Database
 import coffeebot.message.Ignored
 import coffeebot.message.Invalid
@@ -24,6 +25,7 @@ class Dispatcher(private val db: Database?) {
                 .register(accept)
                 .register(cancel)
                 .register(list)
+                .register(lisp)
                 .register(source)
                 .register(help)
         this.loadDb()
