@@ -1,9 +1,24 @@
 package coffeebot.commands.lisp
 
-class Env(private val parent: Env? = null, private val registry: MutableMap<String, LispObject>) {
+import coffeebot.commands.lisp.functions.*
+
+class Env(private val parent: Env? = null, private val registry: MutableMap<String, LispObject> = mutableMapOf()) {
+    private val level: Int = if (parent == null) {
+        0
+    } else {
+        parent.level + 1
+    }
+
+    init {
+        if (level > 10) {
+            throw LispError("Exceeded stack depth")
+        }
+    }
 
     fun find(symbol: String): LispObject? {
-        return registry[symbol.toLowerCase()]
+
+        val symbolLower = symbol.toLowerCase()
+        return registry[symbolLower]?: parent?.find(symbolLower)
     }
 
     fun set(symbol: String, lispObject: LispObject) {
@@ -13,10 +28,16 @@ class Env(private val parent: Env? = null, private val registry: MutableMap<Stri
     fun isGlobalEnv() = parent == null
 }
 
-val globalEnv = Env(registry =  mutableMapOf(
-        "+" to add,
-        "-" to sub,
-        "*" to mul,
-        "define" to define,
-        "type?" to type
-))
+fun initialEnv(): Env {
+    return Env(registry = mutableMapOf(
+            "+" to add,
+            "-" to sub,
+            "*" to mul,
+            "define" to define,
+            "type?" to type,
+            "lambda" to lambda,
+            "clear" to clear
+    ))
+}
+
+var globalEnv: Env = initialEnv()

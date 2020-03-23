@@ -34,6 +34,8 @@ data class Token(val token: String): Expression() {
             throw LispError("Not found: $token")
         }
     }
+
+    fun isIdentifier() = token.matches("[a-zA-Z][A-Za-z0-9]*".toRegex())
 }
 
 fun s(vararg exprs: Expression) = SExpression(exprs.toList())

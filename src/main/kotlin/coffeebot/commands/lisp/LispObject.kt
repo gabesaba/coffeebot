@@ -22,16 +22,6 @@ class Fn(private val name: String, private val fn: (List<Expression>, Env) -> Li
     override fun display() = "The Fn $name"
 }
 
-class Identifier(private val s: String): LispObject() {
-    companion object {
-        fun isIdentifier(s: String) = s.matches("[a-zA-Z][A-Za-z0-9]*".toRegex())
-    }
-
-    override fun type() = LispType("Identifier")
-
-    override fun display() = s
-}
-
 object LispUnit: LispObject() {
     override fun type() = LispType("Unit")
 
