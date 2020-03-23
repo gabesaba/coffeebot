@@ -1,4 +1,13 @@
-package coffeebot.commands.lisp
+package coffeebot.commands.lisp.functions
+
+import coffeebot.commands.lisp.Env
+import coffeebot.commands.lisp.Expression
+import coffeebot.commands.lisp.Fn
+import coffeebot.commands.lisp.LispError
+import coffeebot.commands.lisp.LispUnit
+import coffeebot.commands.lisp.Number
+import coffeebot.commands.lisp.Token
+import coffeebot.commands.lisp.TypeError
 
 fun getInts(exprs: List<Expression>, env: Env): Iterable<Int> {
     return exprs.map {
@@ -30,7 +39,11 @@ val define = Fn("Define") { exprs, env ->
     }
 
     val car = exprs[0]
-    if (car is Token && Identifier.isIdentifier(car.token)) {
+    if (car is Token && car.isIdentifier()) {
+
+        if (car.token.toLowerCase() == "clear") {
+            throw LispError("Cannot redefine clear")
+        }
         val res = exprs[1].eval(env)
         env.set(car.token, res)
         LispUnit
@@ -39,10 +52,3 @@ val define = Fn("Define") { exprs, env ->
     }
 }
 
-val type = Fn("Type?") { exprs, env ->
-
-    if (exprs.size != 1) {
-        throw LispError("Type? expects exactly 1 arg")
-    }
-    exprs.first().eval(env).type()
-}
