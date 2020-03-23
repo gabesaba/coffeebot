@@ -37,7 +37,7 @@ fun initialEnv(): Env {
             "define" to define,
             "lambda" to lambda,
             "definitions" to definitions,
-            "clear" to clear,
+            "clear!" to clear,
             "type?" to type,
             "+" to add,
             "-" to sub,
