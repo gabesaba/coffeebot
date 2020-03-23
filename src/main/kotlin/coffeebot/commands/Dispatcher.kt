@@ -32,15 +32,13 @@ class Dispatcher(private val db: Database?) {
     }
 
     fun process(message: Message) {
-        println("Processing $message")
         when (message) {
             is Valid -> {
                 db?.commit(message)
                 dispatch(message)
-                println("Successfully Processed!")
             }
             is Ignored -> {}
-            is Invalid -> println("Invalid Message!!")
+            is Invalid -> {}
         }
     }
 

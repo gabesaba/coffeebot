@@ -24,7 +24,10 @@ class Offline: MessageProcessor {
                 if (match != null) {
                     user = match.groupValues.component2()
                     println("Switching to user $user")
-                } else {
+                } else if (line.startsWith("(")) {
+                    dispatcher.process(loadMessage(User(user), "!cl $line", StdoutHandler))
+                }
+                else {
                     dispatcher.process(loadMessage(User(user), line, StdoutHandler))
                 }
             } catch (e: Exception) {

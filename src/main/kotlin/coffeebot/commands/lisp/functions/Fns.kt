@@ -32,6 +32,8 @@ val mul = Fn("Mul") { exprs, env ->
     Number(getInts(exprs, env).fold(1) { a, b -> a * b })
 }
 
+
+val undefinable = setOf("clear", "definitions")
 val define = Fn("Define") { exprs, env ->
     when {
         !env.isGlobalEnv() -> throw LispError("Must call Define at top level")
@@ -41,8 +43,8 @@ val define = Fn("Define") { exprs, env ->
     val car = exprs[0]
     if (car is Token && car.isIdentifier()) {
 
-        if (car.token.toLowerCase() == "clear") {
-            throw LispError("Cannot redefine clear")
+        if (undefinable.contains(car.token.toLowerCase())) {
+            throw LispError("Cannot redefine ${car.token}")
         }
         val res = exprs[1].eval(env)
         env.set(car.token, res)
