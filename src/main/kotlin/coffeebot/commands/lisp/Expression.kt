@@ -3,11 +3,11 @@ package coffeebot.commands.lisp
 import java.lang.Exception
 
 sealed class Expression {
-    abstract fun eval(env: Env): LispType
+    abstract fun eval(env: Env): LispObject
 }
 
 data class SExpression(val exprs: List<Expression>): Expression() {
-    override fun eval(env: Env): LispType {
+    override fun eval(env: Env): LispObject {
         val fn = exprs[0].eval(env)
 
         return if (fn is Fn) {
@@ -19,7 +19,7 @@ data class SExpression(val exprs: List<Expression>): Expression() {
 }
 
 data class Token(val token: String): Expression() {
-    override fun eval(env: Env): LispType {
+    override fun eval(env: Env): LispObject {
 
         val num = token.toIntOrNull()
 
