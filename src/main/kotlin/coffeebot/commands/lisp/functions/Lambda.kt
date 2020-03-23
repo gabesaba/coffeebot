@@ -7,7 +7,8 @@ import coffeebot.commands.lisp.SExpression
 import coffeebot.commands.lisp.Token
 import coffeebot.commands.lisp.TypeError
 
-val lambda = Fn("Lambda") { exprs, definingEnv ->
+// TODO: closure around names in definition environment
+val lambda = Fn("Lambda") { exprs, _ ->
     if (exprs.size != 2) {
         throw LispError("Lambda takes 2 args")
     }
