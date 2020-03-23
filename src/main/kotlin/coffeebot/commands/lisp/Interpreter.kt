@@ -8,7 +8,8 @@ fun interpret(s: String): String {
 
 val lisp = Command("!cl", "Eval a CoffeeLisp Expression") {
     try {
-        it.reply(interpret(it.contents.removePrefix("!cl")))
+        val expr = it.contents.removePrefix("!cl")
+        it.reply("$expr -> ${interpret(expr)}")
     } catch (e: Exception) {
         it.reply("$e")
     }

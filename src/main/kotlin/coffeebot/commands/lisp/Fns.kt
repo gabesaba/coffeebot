@@ -39,3 +39,12 @@ val define = Fn("Define") { exprs, env ->
         throw TypeError("Define expects first arg to be an identifier")
     }
 }
+
+val type = Fn("Type?") { exprs, env ->
+
+    if (exprs.size != 1) {
+        throw LispError("Type? expects exactly 1 arg")
+    }
+
+    LispString(exprs.first().eval(env).type())
+}
