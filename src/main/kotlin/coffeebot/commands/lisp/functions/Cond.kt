@@ -5,7 +5,6 @@ import coffeebot.commands.lisp.LispBool
 import coffeebot.commands.lisp.LispError
 import coffeebot.commands.lisp.LispNumber
 import coffeebot.commands.lisp.TypeError
-import java.math.BigInteger
 
 val if7 = Fn("if") { args, env ->
 
@@ -27,7 +26,7 @@ val zero = Fn("zero?") { args, env ->
         throw TypeError("zero? expected Num")
     }
 
-    if (res == LispNumber(BigInteger.ZERO)) {
+    if (res == LispNumber(0)) {
         LispBool.True
     } else {
         LispBool.False

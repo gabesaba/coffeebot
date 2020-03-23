@@ -23,10 +23,10 @@ val sub1 = Fn("sub1") { args, env ->
 }
 
 val mul = Fn("*") { exprs, env ->
-    LispNumber(getInts(exprs, env).fold(BigInteger.ONE) { a, b -> a * b })
+    LispNumber(getNums(exprs, env).fold(BigInteger.ONE) { a, b -> a * b })
 }
 
-fun getInts(exprs: List<Expression>, env: Env): Iterable<BigInteger> {
+fun getNums(exprs: List<Expression>, env: Env): Iterable<BigInteger> {
     return exprs.map {
         val v = it.eval(env)
         if (v is LispNumber) {
