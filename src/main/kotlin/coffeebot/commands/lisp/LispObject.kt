@@ -20,7 +20,7 @@ data class LispString(val s: String): LispObject() {
     override fun type() = LispType("String")
 }
 
-class Fn(private val name: String, private val fn: (List<Expression>, Env) -> LispObject): LispObject() {
+class Fn(val name: String, private val fn: (List<Expression>, Env) -> LispObject): LispObject() {
     fun apply(expressions: List<Expression>, env: Env) = fn(expressions, env)
 
     override fun type() = LispType("Fn")
