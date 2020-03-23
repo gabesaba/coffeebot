@@ -7,7 +7,7 @@ import coffeebot.commands.lisp.LispUnit
 import coffeebot.commands.lisp.globalEnv
 import coffeebot.commands.lisp.initialEnv
 
-var clear = Fn("clear!") { _, _ ->
+val clear = Fn("clear!") { _, _ ->
     globalEnv = initialEnv()
     LispUnit
 }
