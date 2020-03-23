@@ -10,13 +10,12 @@ class Env(private val parent: Env? = null, private val registry: MutableMap<Stri
     }
 
     init {
-        if (level > 10) {
+        if (level > 100) {
             throw LispError("Exceeded stack depth")
         }
     }
 
     fun find(symbol: String): LispObject? {
-
         val symbolLower = symbol.toLowerCase()
         return registry[symbolLower]?: parent?.find(symbolLower)
     }
@@ -40,8 +39,8 @@ fun initialEnv(): Env {
             definitions.register(),
             clear.register(),
             type.register(),
-            add.register(),
-            sub.register(),
+            add1.register(),
+            sub1.register(),
             mul.register(),
             zero.register()
     ))
