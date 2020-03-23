@@ -33,7 +33,7 @@ val mul = Fn("Mul") { exprs, env ->
 }
 
 
-val undefinable = setOf("clear", "definitions")
+val undefinable = setOf(clear.name, definitions.name)
 val define = Fn("Define") { exprs, env ->
     when {
         !env.isGlobalEnv() -> throw LispError("Must call Define at top level")
