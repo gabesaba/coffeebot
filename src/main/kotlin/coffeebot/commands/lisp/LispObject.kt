@@ -14,6 +14,12 @@ data class Number(val num: Int): LispObject() {
     override fun type() = LispType("Number")
 }
 
+data class LispString(val s: String): LispObject() {
+    override fun display() = s
+
+    override fun type() = LispType("String")
+}
+
 class Fn(private val name: String, private val fn: (List<Expression>, Env) -> LispObject): LispObject() {
     fun apply(expressions: List<Expression>, env: Env) = fn(expressions, env)
 

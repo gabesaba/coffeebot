@@ -25,6 +25,10 @@ class Env(private val parent: Env? = null, private val registry: MutableMap<Stri
         registry[symbol.toLowerCase()] = lispObject
     }
 
+    fun getDefinitions(): Set<String> {
+        return registry.keys.union(parent?.getDefinitions() ?: emptySet())
+    }
+
     fun isGlobalEnv() = parent == null
 }
 
@@ -36,7 +40,8 @@ fun initialEnv(): Env {
             "define" to define,
             "type?" to type,
             "lambda" to lambda,
-            "clear" to clear
+            "clear" to clear,
+            "definitions" to definitions
     ))
 }
 
