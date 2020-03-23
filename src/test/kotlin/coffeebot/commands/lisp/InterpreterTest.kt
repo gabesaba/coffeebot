@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 
 class InterpreterTest {
     @Test fun testSimple() {
-        assertEquals(Number(10), interpret("(+ 5 5)"))
+        assertEquals(LispNumber(10), interpret("(+ 5 5)"))
     }
 
     @Test fun define() {

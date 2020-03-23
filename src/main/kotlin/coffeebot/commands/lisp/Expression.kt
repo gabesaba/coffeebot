@@ -9,7 +9,6 @@ sealed class Expression {
 data class SExpression(val exprs: List<Expression>): Expression() {
     override fun eval(env: Env): LispObject {
         val fn = exprs[0].eval(env)
-
         return if (fn is Fn) {
             fn.apply(exprs.subList(1, exprs.size), env)
         } else {
@@ -24,7 +23,7 @@ data class Token(val token: String): Expression() {
         val num = token.toIntOrNull()
 
         if (num != null) {
-         return Number(num)
+         return LispNumber(num)
         }
 
         val type = env.find(token)
