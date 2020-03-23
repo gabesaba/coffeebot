@@ -1,6 +1,5 @@
 package coffeebot.commands.lisp
 
-
 fun getInts(exprs: List<Expression>, env: Env): Iterable<Int> {
     return exprs.map {
         val v = it.eval(env)
@@ -34,7 +33,7 @@ val define = Fn("Define") { exprs, env ->
     if (car is Token && Identifier.isIdentifier(car.token)) {
         val res = exprs[1].eval(env)
         env.set(car.token, res)
-        LispString("${car.token} set to ${res.display()}")
+        LispUnit
     } else {
         throw TypeError("Define expects first arg to be an identifier")
     }
@@ -45,6 +44,5 @@ val type = Fn("Type?") { exprs, env ->
     if (exprs.size != 1) {
         throw LispError("Type? expects exactly 1 arg")
     }
-
-    LispString(exprs.first().eval(env).type())
+    exprs.first().eval(env).type()
 }
