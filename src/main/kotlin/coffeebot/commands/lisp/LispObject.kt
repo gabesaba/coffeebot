@@ -9,6 +9,9 @@ sealed class LispObject {
 }
 
 data class LispNumber(val num: BigInteger): LispObject() {
+
+    constructor(num: Int) : this(BigInteger.valueOf(num.toLong()))
+
     override fun display(): String {
         return num.toString()
     }
