@@ -1,12 +1,14 @@
 package coffeebot.commands.lisp
 
+import java.math.BigInteger
+
 sealed class LispObject {
     abstract fun type(): LispType
 
     abstract fun display(): String
 }
 
-data class LispNumber(val num: Int): LispObject() {
+data class LispNumber(val num: BigInteger): LispObject() {
     override fun display(): String {
         return num.toString()
     }
@@ -14,7 +16,7 @@ data class LispNumber(val num: Int): LispObject() {
     override fun type() = LispType("Num")
 }
 
-sealed class LispBool(): LispObject() {
+sealed class LispBool: LispObject() {
     override fun type()= LispType("Bool")
 
     object True: LispBool() {
