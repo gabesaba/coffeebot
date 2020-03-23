@@ -17,4 +17,6 @@ val globalEnv = Env(registry =  mutableMapOf(
         "+" to add,
         "-" to sub,
         "*" to mul,
-        "define" to define))
+        "define" to define,
+        "type?" to type
+))
