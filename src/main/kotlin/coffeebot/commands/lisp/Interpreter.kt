@@ -2,10 +2,8 @@ package coffeebot.commands.lisp
 
 import coffeebot.commands.Command
 
-val env = Env()
-
 fun interpret(s: String): String {
-    return parseLisp(s).eval(env).display()
+    return parseLisp(s).eval(globalEnv).display()
 }
 
 val lisp = Command("!cl", "Eval a CoffeeLisp Expression") {
