@@ -1,7 +1,6 @@
 package coffeebot.commands.lisp
 
 import java.lang.Exception
-import java.math.BigInteger
 
 sealed class Expression {
     abstract fun eval(env: Env): LispObject
@@ -24,7 +23,7 @@ data class Token(val token: String): Expression() {
         val num = token.toLongOrNull()
 
         if (num != null) {
-         return LispNumber(BigInteger.valueOf(num))
+         return LispNumber(num)
         }
 
         val type = env.find(token)
