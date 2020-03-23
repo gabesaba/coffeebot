@@ -34,14 +34,16 @@ class Env(private val parent: Env? = null, private val registry: MutableMap<Stri
 
 fun initialEnv(): Env {
     return Env(registry = mutableMapOf(
-            "define" to define,
-            "lambda" to lambda,
-            "definitions" to definitions,
-            "clear!" to clear,
-            "type?" to type,
-            "+" to add,
-            "-" to sub,
-            "*" to mul
+            define.register(),
+            lambda.register(),
+            if7.register(),
+            definitions.register(),
+            clear.register(),
+            type.register(),
+            add.register(),
+            sub.register(),
+            mul.register(),
+            zero.register()
     ))
 }
 

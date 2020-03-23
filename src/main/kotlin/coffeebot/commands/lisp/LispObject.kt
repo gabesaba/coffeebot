@@ -6,12 +6,24 @@ sealed class LispObject {
     abstract fun display(): String
 }
 
-data class Number(val num: Int): LispObject() {
+data class LispNumber(val num: Int): LispObject() {
     override fun display(): String {
         return num.toString()
     }
 
-    override fun type() = LispType("Number")
+    override fun type() = LispType("Num")
+}
+
+sealed class LispBool(): LispObject() {
+    override fun type()= LispType("Bool")
+
+    object True: LispBool() {
+        override fun display() = "#t"
+    }
+
+    object False: LispBool() {
+        override fun display() = "#f"
+    }
 }
 
 data class LispString(val s: String): LispObject() {
@@ -22,6 +34,8 @@ data class LispString(val s: String): LispObject() {
 
 class Fn(val name: String, private val fn: (List<Expression>, Env) -> LispObject): LispObject() {
     fun apply(expressions: List<Expression>, env: Env) = fn(expressions, env)
+
+    fun register(): Pair<String, Fn> = Pair(this.name.toLowerCase(), this)
 
     override fun type() = LispType("Fn")
 
@@ -38,6 +52,8 @@ data class LispType(private val name: String): LispObject() {
     override fun type() = LispType("Type")
 
     override fun display() = name
+
+    override fun toString() = name
 }
 
 
