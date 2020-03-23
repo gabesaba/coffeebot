@@ -31,7 +31,7 @@ data class Token(val token: String): Expression() {
         if (type != null) {
             return type
         } else {
-            throw LispError("Not found: $token")
+            throw LispError("Not found: $token. Try (definitions)")
         }
     }
 
