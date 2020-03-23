@@ -20,7 +20,7 @@ val type = Fn("Type?") { exprs, env ->
     exprs.first().eval(env).type()
 }
 
-val definitions = Fn("Env") { _, env ->
+val definitions = Fn("definitions") { _, env ->
     // TODO: Change this to a list type
     LispString(env.getDefinitions().joinToString(" ", "(", ")"))
 }
