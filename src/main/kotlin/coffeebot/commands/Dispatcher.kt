@@ -28,6 +28,7 @@ class Dispatcher(private val db: Database?) {
                 .register(lisp)
                 .register(source)
                 .register(help)
+                .register(miltonIndex)
         this.loadDb()
     }
 
