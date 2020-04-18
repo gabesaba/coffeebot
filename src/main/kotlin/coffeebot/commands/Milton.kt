@@ -1,5 +1,6 @@
 package coffeebot.commands
 
+import coffeebot.message.Valid
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.features.HttpTimeout
@@ -37,15 +38,24 @@ class MiltonClient {
 private val miltonClient = MiltonClient()
 private val indexRegex = "!index (.*)".toRegex()
 
-val miltonIndex = Command("!index", "Index an article to https://milton.terbium.io/") { valid ->
-    val match = indexRegex.matchEntire(valid.contents.trim())
-            ?: throw IllegalStateException("clearly this should never happen")
-    val urlValue = match.groups[1]!!.value
-    val url = try {
-        URL(urlValue)
-    } catch (e: MalformedURLException) {
-        valid.reply("invalid URL: $urlValue")
-        return@Command
+object MiltonCommandHandler : CommandHandler {
+    override fun handle(valid: Valid, backfill: Boolean) {
+        if (backfill) return
+        val match = indexRegex.matchEntire(valid.contents.trim())
+                ?: throw IllegalStateException("clearly this should never happen")
+        val urlValue = match.groups[1]!!.value
+        val url = try {
+            URL(urlValue)
+        } catch (e: MalformedURLException) {
+            valid.reply("invalid URL: $urlValue")
+            return
+        }
+        miltonClient.index(url)
     }
-    miltonClient.index(url)
 }
+
+val miltonIndex = Command(
+        "!index",
+        "Index an article to https://milton.terbium.io/",
+        MiltonCommandHandler
+)
