@@ -49,17 +49,17 @@ class Dispatcher(private val db: Database?) {
 
     private fun loadDb() {
         db?.loadMessagesFromDb()?.forEach {
-            dispatch(it)
+            dispatch(it, backfill = true)
         }
     }
 
-    private fun dispatch(message: Valid) {
+    private fun dispatch(message: Valid, backfill: Boolean = false) {
         for (command in registered) {
             if (command.matches(message)) {
-                command.handle(message)
+                command.handle(message, backfill)
                 return
             }
         }
-        invalid.handle(message)
+        invalid.handle(message, backfill)
     }
 }
