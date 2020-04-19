@@ -25,10 +25,10 @@ class Offline: MessageProcessor {
                     user = match.groupValues.component2()
                     println("Switching to user $user")
                 } else if (line.startsWith("(")) {
-                    dispatcher.process(loadMessage(User(user), "!cl $line", StdoutHandler))
+                    dispatcher.process(loadMessage(User(user), "!cl $line", StdoutHandler(line)))
                 }
                 else {
-                    dispatcher.process(loadMessage(User(user), line, StdoutHandler))
+                    dispatcher.process(loadMessage(User(user), line, StdoutHandler(line)))
                 }
             } catch (e: Exception) {
                 println("You caused an error: ${e.message}")
