@@ -2,7 +2,7 @@ package coffeebot.commands
 
 import coffeebot.commands.lisp.lisp
 import coffeebot.database.Database
-import coffeebot.message.Ignored
+import coffeebot.message.Passive
 import coffeebot.message.Invalid
 import coffeebot.message.Message
 import coffeebot.message.Valid
@@ -12,6 +12,7 @@ import coffeebot.message.Valid
 class Dispatcher(private val db: Database?) {
 
     private val registered = mutableListOf<Command>()
+    private val passiveRegistered = listOf(milton)
 
     // TODO: Figure out how to represent help. This feels sloppy
     private val help = Command("!help", "Invokes help") {
@@ -28,7 +29,6 @@ class Dispatcher(private val db: Database?) {
                 .register(lisp)
                 .register(source)
                 .register(help)
-                .register(miltonIndex)
         this.loadDb()
     }
 
@@ -38,7 +38,9 @@ class Dispatcher(private val db: Database?) {
                 db?.commit(message)
                 dispatch(message)
             }
-            is Ignored -> {}
+            is Passive -> {
+                dispatchPassive(message)
+            }
             is Invalid -> {}
         }
     }
@@ -50,17 +52,21 @@ class Dispatcher(private val db: Database?) {
 
     private fun loadDb() {
         db?.loadMessagesFromDb()?.forEach {
-            dispatch(it, backfill = true)
+            dispatch(it)
         }
     }
 
-    private fun dispatch(message: Valid, backfill: Boolean = false) {
+    private fun dispatch(message: Valid) {
         for (command in registered) {
             if (command.matches(message)) {
-                command.handle(message, backfill)
+                command.handle(message)
                 return
             }
         }
-        invalid.handle(message, backfill)
+        invalid.handle(message)
+    }
+
+    private fun dispatchPassive(message: Passive) {
+        passiveRegistered.forEach { it.handle(message) }
     }
 }
