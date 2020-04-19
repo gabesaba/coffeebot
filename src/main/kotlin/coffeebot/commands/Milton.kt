@@ -21,8 +21,8 @@ class MiltonClient {
             serializer = GsonSerializer()
         }
         install(HttpTimeout) {
-            requestTimeoutMillis = 45_000
-            socketTimeoutMillis = 45_000
+            requestTimeoutMillis = 25_000
+            socketTimeoutMillis = 25_000
         }
     }
     private val miltonHost = "https://milton.terbium.io"
@@ -36,26 +36,21 @@ class MiltonClient {
 }
 
 private val miltonClient = MiltonClient()
-private val indexRegex = "!index (.*)".toRegex()
+private val urlRegex = "https?://[\\w\\d:#@%/;$()~_?+-=\\\\.&]*".toRegex(RegexOption.IGNORE_CASE)
 
-object MiltonCommandHandler : CommandHandler {
-    override fun handle(valid: Valid, backfill: Boolean) {
-        if (backfill) return
-        val match = indexRegex.matchEntire(valid.contents.trim())
-                ?: throw IllegalStateException("clearly this should never happen")
-        val urlValue = match.groups[1]!!.value
+val milton = PassiveCommand { message ->
+    val matches = urlRegex.findAll(message.contents).toList()
+    val results = matches.map { match ->
+        val urlValue = match.value
         val url = try {
             URL(urlValue)
         } catch (e: MalformedURLException) {
-            valid.reply("invalid URL: $urlValue")
-            return
+            throw IllegalStateException("invalid url: $urlRegex")
         }
         miltonClient.index(url)
     }
+    if (matches.isNotEmpty()) {
+        val emoji = if (results.all { it }) "\u2705" else "\u274E"
+        message.react(emoji)
+    }
 }
-
-val miltonIndex = Command(
-        "!index",
-        "Index an article to https://milton.terbium.io/",
-        MiltonCommandHandler
-)

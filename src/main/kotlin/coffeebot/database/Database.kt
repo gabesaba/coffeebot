@@ -1,6 +1,7 @@
 package coffeebot.database
 
 import coffeebot.message.NullHandle
+import coffeebot.message.RepliableMessageHandle
 import coffeebot.message.User
 import coffeebot.message.Valid
 import java.io.File
@@ -20,7 +21,7 @@ class Database(fileName: String) {
             db.forEachLine { line ->
                 val user = line.substringBefore(',')
                 val content = line.substringAfter(',')
-                val msg = Valid(User(user), content, NullHandle)
+                val msg = Valid(User(user), content, RepliableMessageHandle(NullHandle))
                 messages.add(msg)
             }
         } else {
