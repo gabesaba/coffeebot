@@ -14,7 +14,7 @@ dependencies {
 
     implementation("org.gabe.coffee:coffeelisp:1.0") {
         version {
-            branch = "varargs"
+            branch = "master"
         }
     }
 
