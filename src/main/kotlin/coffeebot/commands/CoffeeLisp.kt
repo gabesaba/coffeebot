@@ -1,12 +1,23 @@
 package coffeebot.commands
 
-import coffeelisp.env.interpret
+import coffeebot.message.User
+import coffeelisp.env.Env
+import coffeelisp.env.createEnv
+import coffeelisp.env.eval
 
 val lisp = Command("!cl", "Eval a CoffeeLisp Expression") {
     try {
-        val expr = it.contents.removePrefix("!cl")
-        it.reply("$expr -> ${interpret(expr).display()}")
+        val lisp = it.contents.removePrefix("!cl")
+        val env = it.user.getEnv()
+
+        it.reply(lisp.eval(env))
     } catch (e: Exception) {
         it.reply("$e")
     }
+}
+
+private val envs = mutableMapOf<User, Env>()
+
+private fun User.getEnv(): Env {
+    return envs.getOrPut(this) { createEnv() }
 }
