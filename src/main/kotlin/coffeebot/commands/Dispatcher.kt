@@ -1,6 +1,5 @@
 package coffeebot.commands
 
-import coffeebot.commands.lisp.lisp
 import coffeebot.database.Database
 import coffeebot.message.Ignored
 import coffeebot.message.Invalid
