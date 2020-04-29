@@ -19,12 +19,6 @@ dependencies {
 
     implementation("org.gabe.coffee:coffeelisp:1.0") {
         version {
-            branch = "coffeebot"
-        }
-    }
-
-    implementation("org.gabe.coffee:coffeelisp:1.0") {
-        version {
             branch = "master"
         }
     }
