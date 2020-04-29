@@ -23,6 +23,12 @@ dependencies {
         }
     }
 
+    implementation("org.gabe.coffee:coffeelisp:1.0") {
+        version {
+            branch = "master"
+        }
+    }
+
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
