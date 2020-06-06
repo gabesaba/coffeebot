@@ -8,10 +8,10 @@ import discord4j.core.DiscordClientBuilder
 import discord4j.core.event.domain.lifecycle.ReadyEvent
 import discord4j.core.event.domain.message.MessageCreateEvent
 
-class Online(private val token: String) : MessageProcessor {
+class Online(private val token: String, miltonSecret: String?) : MessageProcessor {
 
     private val db = Database("db.txt")
-    private val dispatcher = Dispatcher(db)
+    private val dispatcher = Dispatcher(db, miltonSecret)
 
     override fun run() {
         val client = DiscordClientBuilder(token).build()
