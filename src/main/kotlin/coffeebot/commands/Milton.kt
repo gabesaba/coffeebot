@@ -1,21 +1,22 @@
 package coffeebot.commands
 
-import coffeebot.message.Valid
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.features.HttpTimeout
 import io.ktor.client.features.json.GsonSerializer
 import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.lang.IllegalStateException
 import java.net.MalformedURLException
 import java.net.URL
 
-class MiltonClient {
+class MiltonClient(private val secret: String) {
     private val httpClient = HttpClient(OkHttp) {
         install(JsonFeature) {
             serializer = GsonSerializer()
@@ -27,30 +28,36 @@ class MiltonClient {
     }
     private val miltonHost = "https://milton.terbium.io"
 
-    fun index(url: URL): Boolean {
+    /**
+     * Indexes `url`; returns true if indexing was successful, false otherwise.
+     */
+    private fun index(url: URL): Boolean {
         val result = runBlocking(Dispatchers.IO) {
-            httpClient.post<HttpResponse>("$miltonHost/save?url=${url}")
+            httpClient.post<HttpResponse>("$miltonHost/save?url=${url}") {
+                header("Authorization", "Bearer bot;coffeebot;$secret")
+            }
         }
         return result.status == HttpStatusCode.OK
     }
-}
 
-private val miltonClient = MiltonClient()
-private val urlRegex = "https?://[\\w\\d:#@%/;$()~_?+-=\\\\.&]*".toRegex(RegexOption.IGNORE_CASE)
-
-val milton = PassiveCommand { message ->
-    val matches = urlRegex.findAll(message.contents).toList()
-    val results = matches.map { match ->
-        val urlValue = match.value
-        val url = try {
-            URL(urlValue)
-        } catch (e: MalformedURLException) {
-            throw IllegalStateException("invalid url: $urlRegex")
+    val command = PassiveCommand { message ->
+        val matches = urlRegex.findAll(message.contents).toList()
+        val results = matches.map { match ->
+            val urlValue = match.value
+            val url = try {
+                URL(urlValue)
+            } catch (e: MalformedURLException) {
+                throw IllegalStateException("invalid url: $urlRegex")
+            }
+            index(url)
         }
-        miltonClient.index(url)
+        if (matches.isNotEmpty()) {
+            val emoji = if (results.all { it }) "✅" else "❎"
+            message.react(emoji)
+        }
     }
-    if (matches.isNotEmpty()) {
-        val emoji = if (results.all { it }) "\u2705" else "\u274E"
-        message.react(emoji)
+
+    companion object {
+        private val urlRegex = "https?://[\\w\\d:#@%/;$()~_?+-=\\\\.&]*".toRegex(RegexOption.IGNORE_CASE)
     }
 }

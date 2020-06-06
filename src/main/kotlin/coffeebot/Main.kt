@@ -2,17 +2,21 @@ package coffeebot
 
 import coffeebot.processor.Offline
 import coffeebot.processor.Online
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.options.option
 
-fun main(args: Array<String>) {
-    if (args.size != 1) {
-        println("Expecting exactly 1 arg: offline|BOT_TOKEN")
-        return
-    }
+fun main(args: Array<String>) = Main().main(args)
 
-    if (args[0].toLowerCase() == "offline") {
-        Offline().run()
-    } else {
-        val token = args[0]
-        Online(token).run()
+class Main : CliktCommand() {
+    val botToken by argument(help="Either the string `offline` or a Discord Token.")
+    val miltonSecret by option(help="Milton bot secret. If omitted, disables Milton support.")
+
+    override fun run() {
+        if (botToken.toLowerCase() == "offline") {
+            Offline(miltonSecret).run()
+        } else {
+            Online(botToken, miltonSecret).run()
+        }
     }
 }
