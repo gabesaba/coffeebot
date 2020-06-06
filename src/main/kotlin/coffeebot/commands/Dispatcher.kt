@@ -8,10 +8,16 @@ import coffeebot.message.Valid
 
 // Each Discord server should probably get its own Dispatcher so it has its own state
 // TODO: Move state from Bet into here
-class Dispatcher(private val db: Database?) {
+class Dispatcher(private val db: Database?, miltonSecret: String?) {
 
     private val registered = mutableListOf<Command>()
-    private val passiveRegistered = listOf(milton)
+    private val miltonCommand: PassiveCommand? = if (miltonSecret != null) {
+        MiltonClient(miltonSecret).command
+    } else {
+        println("No milton secret passed, not starting Milton client")
+        null
+    }
+    private val passiveRegistered = listOfNotNull(miltonCommand)
 
     // TODO: Figure out how to represent help. This feels sloppy
     private val help = Command("!help", "Invokes help") {
