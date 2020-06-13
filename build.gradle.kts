@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.3.70"
+    kotlin("jvm") version "1.3.72"
     application
 }
 
@@ -7,23 +7,28 @@ repositories {
     jcenter()
 }
 
-val ktor_version = "1.3.2"
+val ktorVersion = "1.3.2"
 
 dependencies {
     implementation(kotlin("stdlib"))
 
-    implementation("com.discord4j:discord4j-core:3.0.13")
-    implementation("com.github.ajalt:clikt:2.7.1")
-    implementation("io.ktor:ktor-client-okhttp:$ktor_version")
-    implementation("io.ktor:ktor-client-gson:$ktor_version")
-    implementation("io.ktor:ktor-client-json:$ktor_version")
+    // Discord
+    implementation("com.discord4j:discord4j-core:3.0.14")
 
+    // Milton
+    implementation("com.github.ajalt:clikt:2.7.1")
+    implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
+    implementation("io.ktor:ktor-client-gson:$ktorVersion")
+    implementation("io.ktor:ktor-client-json:$ktorVersion")
+
+    // Lisp
     implementation("org.gabe.coffee:coffeelisp:1.0") {
         version {
             branch = "master"
         }
     }
 
+    // Testing
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
