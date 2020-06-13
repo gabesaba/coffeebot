@@ -8,8 +8,6 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
-import java.io.File
-import kotlin.system.exitProcess
 
 fun main(args: Array<String>) = Main().main(args)
 
@@ -19,11 +17,6 @@ class Main : CliktCommand() {
     private val miltonSecret by option(help = "Milton bot secret. If omitted, disables Milton support.")
 
     override fun run() {
-
-        if (File(database).exists()) {
-            println("Error, $database already exists, which is not supported when shadowing")
-            exitProcess(1)
-        }
         connect(database)
         createTables()
 

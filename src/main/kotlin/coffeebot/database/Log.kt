@@ -6,26 +6,26 @@ import coffeebot.message.User
 import coffeebot.message.Valid
 import java.io.File
 
-class Database(fileName: String) {
-    private val db = File(fileName)
+class Log(fileName: String) {
+    private val log = File(fileName)
 
     fun commit(message: Valid) {
-        db.appendText("${message.user},${message.contents}\n")
+        log.appendText("${message.user},${message.contents}\n")
     }
 
-    fun loadMessagesFromDb(): List<Valid> {
+    fun loadMessagesFromLog(): List<Valid> {
         val messages = mutableListOf<Valid>()
-        if (db.exists()) {
-            println("DB exists! Loading from file")
+        if (log.exists()) {
+            println("Log exists! Loading from file")
 
-            db.forEachLine { line ->
+            log.forEachLine { line ->
                 val user = line.substringBefore(',')
                 val content = line.substringAfter(',')
                 val msg = Valid(User(user), content, RepliableMessageHandle(NullHandle))
                 messages.add(msg)
             }
         } else {
-            println("DB doesn't exist")
+            println("Log doesn't exist")
         }
         return messages
     }
