@@ -10,7 +10,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent
 
 class Online(private val token: String, miltonSecret: String?) : MessageProcessor {
 
-    private val log = Log("db.txt")
+    private val log = Log("log.txt")
     private val dispatcher = Dispatcher(log, miltonSecret)
 
     override fun run() {
