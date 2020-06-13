@@ -25,10 +25,11 @@ class Offline(miltonSecret: String?): MessageProcessor {
                     user = match.groupValues.component2()
                     println("Switching to user $user")
                 } else if (line.startsWith("(")) {
-                    dispatcher.process(loadMessage(User(user), "!cl $line", StdoutHandler(line)))
+                    dispatcher.process(loadMessage(User(user, user.hashCode().toLong()), "!cl $line",
+                            StdoutHandler(line)))
                 }
                 else {
-                    dispatcher.process(loadMessage(User(user), line, StdoutHandler(line)))
+                    dispatcher.process(loadMessage(User(user, user.hashCode().toLong()), line, StdoutHandler(line)))
                 }
             } catch (e: Exception) {
                 println("You caused an error: ${e.message}")

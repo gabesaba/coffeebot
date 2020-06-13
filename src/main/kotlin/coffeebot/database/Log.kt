@@ -21,7 +21,7 @@ class Log(fileName: String) {
             log.forEachLine { line ->
                 val user = line.substringBefore(',')
                 val content = line.substringAfter(',')
-                val msg = Valid(User(user), content, RepliableMessageHandle(NullHandle))
+                val msg = Valid(User(user, 0), content, RepliableMessageHandle(NullHandle))
                 messages.add(msg)
             }
         } else {

@@ -48,7 +48,7 @@ val bet = Command("!bet", "Initiate a coffee bet") { message ->
     val requester = message.user.name
     val id = proposeWager(requester, coffee.num, coffee.num, groups[2])
 
-    message.reply("Type !accept ${id} to accept ${requester}'s bet")
+    message.reply("Type !accept ${id} to accept ${message.user.getMentionString()}'s bet")
 }
 
 private fun Valid.invalidId() {
@@ -66,7 +66,7 @@ val cancel = Command("!cancel", "Cancel a bet") { message ->
 
     val id = groups[1].toInt()
     if (cancelWager(message.user.name, id) is Result.Success) {
-        message.reply("$id successfully cancelled!")
+        message.reply("$id successfully cancelled!\n${message.user.getMentionString()}")
     } else {
         message.reply("Couldn't cancel request")
     }
@@ -83,7 +83,7 @@ val accept = Command("!accept", "Accept a bet") { message ->
     val id = groups[1].toInt()
 
     if (acceptWager(message.user.name, id) is Result.Success) {
-        message.reply("Congrats ${message.user}! You accepted $id")
+        message.reply("Congrats ${message.user.getMentionString()}! You accepted $id")
     } else {
         message.reply("Failed to accept $id, noob")
     }
@@ -93,26 +93,30 @@ val list = Command("!list", "List bets") { message ->
 
     fun formatBet(row: ResultRow): String {
         val betString = StringBuilder()
-        val state = row[CoffeeWager.state]
-        val person1 = row[CoffeeWager.person1]
-        val person2 = row[CoffeeWager.person2]
-        val bet1 = Coffee(row[CoffeeWager.coffees1])
-        val bet2 = Coffee(row[CoffeeWager.coffees2])
-        val terms = row[CoffeeWager.terms]
-        betString.append("    $person1 ")
 
+        val id = row[CoffeeWager.id]
+        val person1 = row[CoffeeWager.person1]
+        betString.append("    $id. `$person1` ")
+
+
+        val person2 = row[CoffeeWager.person2]
+        val state = row[CoffeeWager.state]
         if (state == WagerState.Proposed) {
             betString.append("wants to bet ")
         } else {
-            betString.append("bet $person2 ")
+            betString.append("bet `$person2` ")
         }
 
-        betString.append("$bet1 ")
+        val bet1 = Coffee(row[CoffeeWager.coffees1])
+        val bet2 = Coffee(row[CoffeeWager.coffees2])
+        betString.append("__$bet1")
         if (bet1 != bet2) {
-            betString.append("to $bet2 ")
+            betString.append("to $bet2")
         }
+        betString.append("__ ")
 
-        betString.append("that $terms")
+        val terms = row[CoffeeWager.terms]
+        betString.append("that __***$terms***__")
         return betString.toString()
     }
 
@@ -126,8 +130,8 @@ val list = Command("!list", "List bets") { message ->
         formatBet(it)
     }
 
-    val reply = "Num Active Bets: ${active.size}\n$activeStr\n" +
-            "Num Proposals: ${proposals.size}\n$proposalsStr\n"
+    val reply = "Active (${active.size}):\n$activeStr\n" +
+            "Proposals (${proposals.size}):\n$proposalsStr\n${message.user.getMentionString()}"
     // TODO: Add completed bets once !reckon is added (https://github.com/gabesaba/coffeebot/issues/20)
     message.reply(reply)
 }

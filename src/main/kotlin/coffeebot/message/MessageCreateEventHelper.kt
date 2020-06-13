@@ -26,5 +26,5 @@ fun MessageCreateEvent.toCoffeeBotMessage(): Message {
 }
 
 fun MessageCreateEvent.getUser(): User? {
-    return this.message.author.orElse(null)?.username?.let { User(it) }
+    return this.message.author.orElse(null).let { User(it.username, it.id.asLong()) }
 }
