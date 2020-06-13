@@ -1,7 +1,7 @@
 package coffeebot.processor
 
 import coffeebot.commands.Dispatcher
-import coffeebot.database.Database
+import coffeebot.database.Log
 import coffeebot.message.toCoffeeBotMessage
 import discord4j.common.close.CloseException
 import discord4j.core.DiscordClientBuilder
@@ -10,8 +10,8 @@ import discord4j.core.event.domain.message.MessageCreateEvent
 
 class Online(private val token: String, miltonSecret: String?) : MessageProcessor {
 
-    private val db = Database("db.txt")
-    private val dispatcher = Dispatcher(db, miltonSecret)
+    private val log = Log("db.txt")
+    private val dispatcher = Dispatcher(log, miltonSecret)
 
     override fun run() {
         val client = DiscordClientBuilder(token).build()

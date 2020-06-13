@@ -1,14 +1,13 @@
 package coffeebot.commands
 
-import coffeebot.database.Database
+import coffeebot.database.Log
 import coffeebot.message.Passive
 import coffeebot.message.Invalid
 import coffeebot.message.Message
 import coffeebot.message.Valid
 
 // Each Discord server should probably get its own Dispatcher so it has its own state
-// TODO: Move state from Bet into here
-class Dispatcher(private val db: Database?, miltonSecret: String?) {
+class Dispatcher(private val db: Log?, miltonSecret: String?) {
 
     private val registered = mutableListOf<Command>()
     private val miltonCommand: PassiveCommand? = if (miltonSecret != null) {
@@ -50,14 +49,19 @@ class Dispatcher(private val db: Database?, miltonSecret: String?) {
         }
     }
 
-    fun register(command: Command): Dispatcher {
+    private fun register(command: Command): Dispatcher {
         registered.add(command)
         return this
     }
 
     private fun loadDb() {
-        db?.loadMessagesFromDb()?.forEach {
-            dispatch(it)
+        db?.loadMessagesFromLog()?.forEach {
+            if (it.contents.startsWith("!cl")) {
+                println("Applying lisp: $it")
+                dispatch(it)
+            } else {
+                println("Ignoring message: $it")
+            }
         }
     }
 

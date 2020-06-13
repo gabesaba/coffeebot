@@ -1,43 +1,20 @@
 package coffeebot.commands
 
 import coffeebot.database.CoffeeWager
+import coffeebot.database.Result
 import coffeebot.database.WagerState
 import coffeebot.database.acceptWager
 import coffeebot.database.cancelWager
 import coffeebot.database.getActiveWagers
-import coffeebot.database.getId
 import coffeebot.database.getProposals
 import coffeebot.database.proposeWager
-import coffeebot.message.User
 import coffeebot.message.Valid
 import org.jetbrains.exposed.sql.ResultRow
+import java.lang.StringBuilder
 
 private val betRegex = Regex("!bet (a|one|two|three|[1-3]) (?:cups? of )?coffees? that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
-
-private val active = mutableListOf<Active>()
-private val proposals = mutableMapOf<String, Proposal>()
-private var currBet = 0
-
-data class Proposal(val requester: User, val coffee: Coffee, val subject: String) {
-
-    val id = currBet++.toString()
-
-    fun toActive(acceptor: User): Active {
-        return Active(this.requester, acceptor, this.coffee, this.subject, this.id.toInt())
-    }
-
-    override fun toString(): String {
-        return "${this.id}: ${this.requester} wants to bet ${this.coffee} that ${this.subject}"
-    }
-}
-
-data class Active(val requester: User, val acceptor: User, val coffee: Coffee, val subject: String, val id: Int) {
-    override fun toString(): String {
-        return "${this.requester} has bet ${this.acceptor} ${this.coffee} that ${this.subject}"
-    }
-}
 
 data class Coffee(val num: Int) {
     override fun toString(): String {
@@ -67,23 +44,11 @@ val bet = Command("!bet", "Initiate a coffee bet") { message ->
         }
     })
 
-    val proposal = Proposal(message.user, coffee, groups[2])
 
-    proposals[proposal.id] = proposal
+    val requester = message.user.name
+    val id = proposeWager(requester, coffee.num, coffee.num, groups[2])
 
-    // SHADOW NEW DB
-    proposeWager(message.user.name, coffee.num, coffee.num, groups[2])
-    validateNewDb()
-    // END SHADOW
-
-    message.reply("Type !accept ${proposal.id} to accept ${proposal.requester}'s bet")
-}
-
-private fun String.getProposal(): Proposal? {
-    // SHADOW NEW DB
-    require(getProposals().size == proposals.size)
-    // END SHADOW
-    return proposals[this]
+    message.reply("Type !accept ${id} to accept ${requester}'s bet")
 }
 
 private fun Valid.invalidId() {
@@ -99,21 +64,11 @@ val cancel = Command("!cancel", "Cancel a bet") { message ->
         return@Command
     }
 
-    val proposal = groups[1].getProposal()
-
-    when {
-        proposal == null -> message.invalidId()
-        proposal.requester != message.user -> message.reply("Away hacker!")
-        else -> {
-            proposals.remove(proposal.id)
-
-            // SHADOW NEW DB
-            cancelWager(message.user.name, proposal.id.toInt() + 1)
-            validateNewDb()
-            // END SHADOW
-
-            message.reply("Bet ${proposal.id} successfully cancelled!")
-        }
+    val id = groups[1].toInt()
+    if (cancelWager(message.user.name, id) is Result.Success) {
+        message.reply("$id successfully cancelled!")
+    } else {
+        message.reply("Couldn't cancel request")
     }
 }
 
@@ -125,83 +80,54 @@ val accept = Command("!accept", "Accept a bet") { message ->
         return@Command
     }
 
-    val proposal = groups[1].getProposal()
+    val id = groups[1].toInt()
 
-    when {
-        proposal == null -> message.invalidId()
-        proposal.requester == message.user -> message.reply("You can't accept your own request noob")
-        else -> {
-            active.add(proposal.toActive(message.user))
-            proposals.remove(proposal.id)
-
-            // SHADOW NEW DB
-            acceptWager(message.user.name, groups[1].toInt() + 1)
-            validateNewDb()
-            // END SHADOW
-
-            message.reply("Congrats ${message.user}! You accepted ${proposal.requester}'s bet")
-        }
+    if (acceptWager(message.user.name, id) is Result.Success) {
+        message.reply("Congrats ${message.user}! You accepted $id")
+    } else {
+        message.reply("Failed to accept $id, noob")
     }
 }
 
 val list = Command("!list", "List bets") { message ->
 
-    val activeStr = active.joinToString("\n") { "\t$it" }
-    val proposalsStr = proposals.values.joinToString("\n") { "\t$it" }
+    fun formatBet(row: ResultRow): String {
+        val betString = StringBuilder()
+        val state = row[CoffeeWager.state]
+        val person1 = row[CoffeeWager.person1]
+        val person2 = row[CoffeeWager.person2]
+        val bet1 = Coffee(row[CoffeeWager.coffees1])
+        val bet2 = Coffee(row[CoffeeWager.coffees2])
+        val terms = row[CoffeeWager.terms]
+        betString.append("    $person1 ")
 
-    // SHADOW NEW DB
-    validateNewDb()
-    // END SHADOW
+        if (state == WagerState.Proposed) {
+            betString.append("wants to bet ")
+        } else {
+            betString.append("bet $person2 ")
+        }
+
+        betString.append("$bet1 ")
+        if (bet1 != bet2) {
+            betString.append("to $bet2 ")
+        }
+
+        betString.append("that $terms")
+        return betString.toString()
+    }
+
+    val proposals = getProposals()
+    val proposalsStr = proposals.joinToString("\n") {
+        formatBet(it)
+    }
+
+    val active = getActiveWagers()
+    val activeStr = active.joinToString("\n") {
+        formatBet(it)
+    }
+
     val reply = "Num Active Bets: ${active.size}\n$activeStr\n" +
             "Num Proposals: ${proposals.size}\n$proposalsStr\n"
     // TODO: Add completed bets once !reckon is added (https://github.com/gabesaba/coffeebot/issues/20)
     message.reply(reply)
-}
-
-private fun validate(row: ResultRow?, name1: String, name2: String?,
-                     bet: Int, subject: String, state: WagerState) {
-    if (row == null) {
-        println("ERROR: Missing entry with subject $subject")
-        return
-    }
-    if (row[CoffeeWager.person1] != name1) {
-        println("ERROR: name mismatch")
-    }
-    if (row[CoffeeWager.person2] != name2) {
-        println("ERROR: second name doesn't match")
-    }
-    if (row[CoffeeWager.coffees1] != bet) {
-        println("ERROR: coffee mismatch")
-    }
-    if (row[CoffeeWager.coffees1] != row[CoffeeWager.coffees2]) {
-        println("ERROR: asymmetric bets not yet supported!")
-    }
-    if (row[CoffeeWager.terms] != subject) {
-        println("ERROR: terms mismatch")
-    }
-    if (row[CoffeeWager.state] != state) {
-        println("ERROR: wrong state")
-    }
-}
-
-private fun validateNewDb() {
-    if (getActiveWagers().size != active.size) {
-        println("ERROR: active wager size mismatch")
-    }
-
-    if (getProposals().size != proposals.size) {
-        println("ERROR: proposal size mismatch")
-    }
-
-    proposals.values.forEach { proposal ->
-        val row = getId(proposal.id.toInt() + 1)
-        validate(row, proposal.requester.name, null, proposal.coffee.num,
-                proposal.subject, WagerState.Proposed)
-    }
-
-    active.forEach { active ->
-        val row = getId(active.id + 1)
-        validate(row, active.requester.name, active.acceptor.name, active.coffee.num, active.subject,
-                WagerState.Accepted)
-    }
 }
