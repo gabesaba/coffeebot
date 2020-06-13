@@ -9,6 +9,9 @@ build
 
 # Idea
 .idea/
+out/
 
 # DB
-*db.txt
+log.txt
+offline_log.txt
+coffeebot.db
