@@ -213,22 +213,62 @@ class CoffeeWagerTest {
     @Test
     fun testFlow() {
         val dispatcher = Dispatcher(null, null)
-        dispatcher.process(createMessage("gabe", "!bet 1 coffee that I win this bet"))
+        dispatcher.process(createMessage("gabe", "!bet 1 coffee that $defaultTerms"))
         dispatcher.process(createMessage("matt", "!accept 1"))
         dispatcher.process(createMessage("jason", "!adjudicate 1 matt"))
         assertEquals(1, getCompletedWagers().size)
+        validate(getId(1), 1, "gabe", "matt",
+                WagerState.Completed, 1, 1)
+    }
+
+    @Test
+    fun testAsymmetricBet() {
+        val dispatcher = Dispatcher(null, null)
+        dispatcher.process(createMessage("gabe", "!bet 2 coffees to 3 coffees that $defaultTerms"))
+        dispatcher.process(createMessage("matt", "!accept 1"))
+        dispatcher.process(createMessage("jason", "!adjudicate 1 matt"))
+        assertEquals(1, getCompletedWagers().size)
+        validate(getId(1), 1, "gabe", "matt",
+                WagerState.Completed, 2, 3)
+    }
+
+    @Test
+    fun testBetWordings() {
+        val dispatcher = Dispatcher(null, null)
+        var expectedEntries = 0
+
+        fun testWording(wording: String) {
+            dispatcher.process(createMessage("gabe", wording))
+            expectedEntries += 1
+            assertEquals(expectedEntries, getProposals().size)
+        }
+
+        testWording("!bet 1 to 2 that x")
+        testWording("!bet 1 coffee to 2 coffees that x")
+        testWording("!bet three coffees to one that x")
+        testWording("!bet three coffees to one cup of coffee that x")
+        testWording("!bet 3 to two that x")
+        testWording("!bet a cup to two that x")
+        testWording("!bet a cup of coffee that x")
+        testWording("!bet a coffee that x")
+        testWording("!bet 1 coffee that x")
+        testWording("!bet two cups that x")
     }
 
     private fun createMessage(name: String, message: String): Message {
         return Valid(User(name), message, RepliableMessageHandle(NullHandle))
     }
 
-    private fun validate(resultRow: ResultRow, id: Int, person2: String? = null, state: WagerState) {
+    private fun validate(resultRow: ResultRow?, id: Int, person1: String = "gabe",
+                         person2: String? = null, state: WagerState,
+                         coffees1: Int = 1, coffees2: Int = 2, terms: String = defaultTerms) {
+        assertNotNull(resultRow)
         assertEquals(id, resultRow[CoffeeWager.id].value)
-        assertEquals("gabe", resultRow[person1])
+        assertEquals(person1, resultRow[CoffeeWager.person1])
         assertEquals(person2, resultRow[CoffeeWager.person2])
-        assertEquals(1, resultRow[coffees1])
-        assertEquals(2, resultRow[coffees2])
+        assertEquals(coffees1, resultRow[CoffeeWager.coffees1])
+        assertEquals(coffees2, resultRow[CoffeeWager.coffees2])
+        assertEquals(terms, resultRow[CoffeeWager.terms])
         assertEquals(state, resultRow[CoffeeWager.state])
     }
 }
