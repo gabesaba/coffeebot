@@ -29,6 +29,7 @@ class Dispatcher(private val log: Log?, miltonSecret: String?) {
                 .register(bet)
                 .register(accept)
                 .register(cancel)
+                .register(adjudicate)
                 .register(list)
                 .register(lisp)
                 .register(source)
