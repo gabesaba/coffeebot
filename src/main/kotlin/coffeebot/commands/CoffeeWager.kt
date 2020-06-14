@@ -6,7 +6,9 @@ import coffeebot.database.WagerState
 import coffeebot.database.acceptWager
 import coffeebot.database.cancelWager
 import coffeebot.database.getActiveWagers
+import coffeebot.database.getCompletedWagers
 import coffeebot.database.getProposals
+import coffeebot.database.adjudicateWager
 import coffeebot.database.proposeWager
 import coffeebot.message.Valid
 import org.jetbrains.exposed.sql.ResultRow
@@ -15,6 +17,7 @@ import java.lang.StringBuilder
 private val betRegex = Regex("!bet (a|one|two|three|[1-3]) (?:cups? of )?coffees? that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
+private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
 
 data class Coffee(val num: Int) {
     override fun toString(): String {
@@ -89,6 +92,32 @@ val accept = Command("!accept", "Accept a bet") { message ->
     }
 }
 
+val adjudicate = Command("!adjudicate", "Adjudicate a bet. !adjudicate ID WINNER") {message ->
+    val groups = adjudicateRegex.matchEntire(message.contents)?.groupValues
+
+    if (groups == null) {
+        message.reply("Expecting !adjudicate ID WINNER")
+        return@Command
+    }
+    val parts = message.contents.split(" ")
+    if (parts.size != 3) {
+        message.reply("Requires 2 args: ID WINNER")
+    }
+
+    val id = groups[1].toIntOrNull()
+    if (id == null) {
+        message.reply("Error parsing id")
+        return@Command
+    }
+    val winner = groups[2]
+
+    if (adjudicateWager(id, winner) == Result.Success) {
+        message.reply("$winner has won $id")
+    } else {
+        message.reply("Failed to adjudicate bet $id")
+    }
+}
+
 val list = Command("!list", "List bets") { message ->
 
     fun formatBet(row: ResultRow): String {
@@ -117,21 +146,27 @@ val list = Command("!list", "List bets") { message ->
 
         val terms = row[CoffeeWager.terms]
         betString.append("that __***$terms***__")
-        return betString.toString()
+
+        val res = betString.toString()
+        val winner = row[CoffeeWager.winner]
+        return if (state == WagerState.Completed && winner != null) {
+            res.replace(winner, "$winner (winner)")
+        } else {
+            res
+        }
     }
 
-    val proposals = getProposals()
-    val proposalsStr = proposals.joinToString("\n") {
-        formatBet(it)
+    fun formatRows(name: String, rows: List<ResultRow>): String {
+        val rowStr = rows.joinToString("\n") {
+            formatBet(it)
+        }
+        return "$name (${rows.size}):\n$rowStr\n"
     }
 
-    val active = getActiveWagers()
-    val activeStr = active.joinToString("\n") {
-        formatBet(it)
-    }
-
-    val reply = "Active (${active.size}):\n$activeStr\n" +
-            "Proposals (${proposals.size}):\n$proposalsStr\n${message.user.getMentionString()}"
-    // TODO: Add completed bets once !reckon is added (https://github.com/gabesaba/coffeebot/issues/20)
-    message.reply(reply)
+    val reply = StringBuilder()
+    reply.append(formatRows("Proposals", getProposals()))
+    reply.append(formatRows("Active", getActiveWagers()))
+    reply.append(formatRows("Completed", getCompletedWagers()))
+    reply.append(message.user.getMentionString())
+    message.reply(reply.toString())
 }

@@ -1,10 +1,11 @@
 package coffeebot.database
 
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 
@@ -87,6 +88,32 @@ fun acceptWager(person: String, id: Int): Result {
 }
 
 /**
+ * Decide who won a wager.
+ * @param id: Id of wager to adjudicate.
+ * @param whoWon: Person who won the wager.
+ * @return: Whether or not the wager was successfully adjudicated.
+ */
+fun adjudicateWager(id: Int, whoWon: String): Result {
+    return transaction {
+        val before = getCompletedWagers().size
+        CoffeeWager.update({
+            (CoffeeWager.id eq id)
+                    .and((CoffeeWager.person1 eq whoWon).or(CoffeeWager.person2 eq whoWon))
+        }) {
+            it[state] = WagerState.Completed
+            it[winner] = whoWon
+        }
+
+        val after = getCompletedWagers().size
+        if (after == before + 1) {
+            Result.Success
+        } else {
+            Result.Failure
+        }
+    }
+}
+
+/**
  * Get a Wager by id.
  */
 fun getId(id: Int): ResultRow?  {
@@ -100,26 +127,25 @@ fun getId(id: Int): ResultRow?  {
 /**
  * Get proposed wagers, sorted by id.
  */
-fun getProposals(): List<ResultRow> {
-    return getRowsInState(CoffeeWager, WagerState.Proposed)
-}
+fun getProposals(): List<ResultRow> = getRowsInState(WagerState.Proposed)
 
 /**
  * Get active wagers, sorted by id.
  */
-fun getActiveWagers(): List<ResultRow> {
-    return getRowsInState(CoffeeWager, WagerState.Accepted)
-}
+fun getActiveWagers(): List<ResultRow> = getRowsInState(WagerState.Accepted)
 
 /**
  * Get canceled wagers, sorted by id.
  */
-fun getCanceledWagers(): List<ResultRow> {
-    return getRowsInState(CoffeeWager, WagerState.Canceled)
-}
+fun getCanceledWagers(): List<ResultRow> = getRowsInState(WagerState.Canceled)
 
-private fun getRowsInState(table: Table, state: WagerState): List<ResultRow> {
+/**
+ * Get completed wagers, sorted by id.
+ */
+fun getCompletedWagers(): List<ResultRow> = getRowsInState(WagerState.Completed)
+
+private fun getRowsInState(state: WagerState): List<ResultRow> {
     return transaction {
-        table.select { CoffeeWager.state eq state }.sortedBy { CoffeeWager.id }
+        CoffeeWager.select { CoffeeWager.state eq state }.sortedBy { CoffeeWager.id }
     }
 }
