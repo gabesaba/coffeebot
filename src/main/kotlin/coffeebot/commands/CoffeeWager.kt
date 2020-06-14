@@ -14,42 +14,56 @@ import coffeebot.message.Valid
 import org.jetbrains.exposed.sql.ResultRow
 import java.lang.StringBuilder
 
-private val betRegex = Regex("!bet (a|one|two|three|[1-3]) (?:cups? of )?coffees? that (.+)")
+private val coffeeRegex = Regex("(a|one|two|three|[1-7])(?: cups?(?: of)?)?(?: coffees?)?")
+private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
+
+private const val coffeeSuffix = "cups of coffee"
 
 data class Coffee(val num: Int) {
     override fun toString(): String {
         return when (num) {
             1 -> "a cup of coffee"
-            2 -> "two cups of coffee"
-            3 -> "three cups of coffee"
-            else -> throw IllegalStateException("Invalid num coffees")
+            else -> "$num $coffeeSuffix"
         }
     }
 }
 
 val bet = Command("!bet", "Initiate a coffee bet") { message ->
+    if (message.contents == "!bet show_regex") {
+        message.reply("Regex: $betRegex")
+        return@Command
+    }
     val groups = betRegex.matchEntire(message.contents)?.groupValues
     if (groups == null) {
-        message.reply("Invalid Syntax. Try: !bet (1-3) cup(s) of coffee that XYZ")
+        message.reply("Invalid Syntax. Try \"!bet [1-7] to [1-7]" +
+                " cups of coffee that X\", or type !bet show_regex")
         return@Command
     }
 
-    val coffee = Coffee(when (groups[1]) {
-        "a", "1", "one"-> 1
-        "2", "two" -> 2
-        "3", "three" -> 3
-        else -> {
-            message.reply("Invalid num cups. Try a | two | three")
-            return@Command
-        }
-    })
+    fun String.toCoffee(): Coffee {
+        return Coffee(when (this) {
+            "a", "one"-> 1
+            "two" -> 2
+            "three" -> 3
+            else -> this.toInt()
+        })
+    }
+
+    val coffee1 = groups[1].toCoffee()
+    val coffee2 = if (groups[2].isEmpty()) {
+        coffee1
+    } else {
+        groups[2].toCoffee()
+    }
+
+    val terms = groups[3]
 
 
     val requester = message.user.name
-    val id = proposeWager(requester, coffee.num, coffee.num, groups[2])
+    val id = proposeWager(requester, coffee1.num, coffee2.num, terms)
 
     message.reply("Type !accept ${id} to accept ${requester}'s bet")
 }
