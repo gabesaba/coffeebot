@@ -11,6 +11,7 @@ enum class WagerState {
     Proposed,
     Accepted,
     Canceled,
+    Completed,
 }
 
 object CoffeeWager: IntIdTable() {
@@ -20,6 +21,7 @@ object CoffeeWager: IntIdTable() {
     val coffees2 = integer("coffees2")
     val terms = varchar("terms", 500)
     val state = enumeration("state", WagerState::class)
+    val winner = varchar("winner", 50).nullable()
 }
 
 fun connect(filename: String) {
