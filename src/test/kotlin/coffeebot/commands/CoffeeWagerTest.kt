@@ -5,6 +5,8 @@ import coffeebot.database.CoffeeWager.coffees1
 import coffeebot.database.CoffeeWager.coffees2
 import coffeebot.database.CoffeeWager.person1
 import coffeebot.database.CoffeeWager.person2
+import coffeebot.database.CoffeeWager.state
+import coffeebot.database.CoffeeWager.winner
 import coffeebot.database.Result
 import coffeebot.database.WagerState
 import coffeebot.database.acceptWager
@@ -13,9 +15,16 @@ import coffeebot.database.connect
 import coffeebot.database.createTables
 import coffeebot.database.getActiveWagers
 import coffeebot.database.getCanceledWagers
+import coffeebot.database.getCompletedWagers
 import coffeebot.database.getId
 import coffeebot.database.getProposals
+import coffeebot.database.adjudicateWager
 import coffeebot.database.proposeWager
+import coffeebot.message.Message
+import coffeebot.message.NullHandle
+import coffeebot.message.RepliableMessageHandle
+import coffeebot.message.User
+import coffeebot.message.Valid
 import org.jetbrains.exposed.sql.ResultRow
 import org.junit.Test
 import java.io.File
@@ -94,6 +103,71 @@ class CoffeeWagerTest {
     }
 
     @Test
+    fun testAdjudicateWagerWhenPerson1Wins() {
+        val id = proposeWager("Gabe", 3, 1, defaultTerms)
+        assertEquals(1, getProposals().size)
+        assertEquals(0, getActiveWagers().size)
+        assertEquals(0, getCompletedWagers().size)
+
+        assertTrue {  acceptWager("Joe", id) is Result.Success }
+        assertEquals(0, getProposals().size)
+        assertEquals(1, getActiveWagers().size)
+        assertEquals(0, getCompletedWagers().size)
+
+        assertTrue {  adjudicateWager(id, "Gabe") is Result.Success }
+
+        assertEquals(0, getProposals().size)
+        assertEquals(0, getActiveWagers().size)
+        assertEquals(1, getCompletedWagers().size)
+
+        val res = getId(id)
+        assertNotNull(res)
+        assertEquals("Gabe", res[winner])
+        assertEquals(WagerState.Completed, res[state])
+    }
+
+    @Test
+    fun testAdjudicateWagerWhenPerson2Wins() {
+        val id = proposeWager("Gabe", 3, 1, defaultTerms)
+        assertEquals(1, getProposals().size)
+        assertEquals(0, getActiveWagers().size)
+        assertEquals(0, getCompletedWagers().size)
+
+        assertTrue {  acceptWager("Joe", id) is Result.Success }
+        assertEquals(0, getProposals().size)
+        assertEquals(1, getActiveWagers().size)
+        assertEquals(0, getCompletedWagers().size)
+
+        assertTrue {  adjudicateWager(id, "Joe") is Result.Success }
+        assertEquals(0, getProposals().size)
+        assertEquals(0, getActiveWagers().size)
+        assertEquals(1, getCompletedWagers().size)
+
+        val res = getId(id)
+        assertNotNull(res)
+        assertEquals("Joe", res[winner])
+        assertEquals(WagerState.Completed, res[state])
+    }
+
+    @Test
+    fun testFailToAdjudicateWhenPersonNotInBet() {
+        val id = proposeWager("Gabe", 3, 1, defaultTerms)
+        assertEquals(1, getProposals().size)
+        assertEquals(0, getActiveWagers().size)
+        assertEquals(0, getCompletedWagers().size)
+
+        assertTrue {  acceptWager("Joe", id) is Result.Success }
+        assertEquals(0, getProposals().size)
+        assertEquals(1, getActiveWagers().size)
+        assertEquals(0, getCompletedWagers().size)
+
+        assertTrue {  adjudicateWager(id, "WhoDat") is Result.Failure }
+        assertEquals(0, getProposals().size)
+        assertEquals(1, getActiveWagers().size)
+        assertEquals(0, getCompletedWagers().size)
+    }
+
+    @Test
     fun testFailureToAcceptOwnWager() {
         val wagerId = proposeWager("Gabe", 1, 1, defaultTerms)
         assertEquals(1, getProposals().size)
@@ -134,6 +208,19 @@ class CoffeeWagerTest {
         val cancelled = getId(id)
         assertNotNull(cancelled)
         validate(cancelled, id, state = WagerState.Canceled)
+    }
+
+    @Test
+    fun testFlow() {
+        val dispatcher = Dispatcher(null, null)
+        dispatcher.process(createMessage("gabe", "!bet 1 coffee that I win this bet"))
+        dispatcher.process(createMessage("matt", "!accept 1"))
+        dispatcher.process(createMessage("jason", "!adjudicate 1 matt"))
+        assertEquals(1, getCompletedWagers().size)
+    }
+
+    private fun createMessage(name: String, message: String): Message {
+        return Valid(User(name), message, RepliableMessageHandle(NullHandle))
     }
 
     private fun validate(resultRow: ResultRow, id: Int, person2: String? = null, state: WagerState) {
