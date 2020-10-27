@@ -7,7 +7,7 @@ import coffeebot.message.Message
 import coffeebot.message.Valid
 
 // Each Discord server should probably get its own Dispatcher so it has its own state
-class Dispatcher(private val db: Log?, miltonSecret: String?) {
+class Dispatcher(private val log: Log?, miltonSecret: String?) {
 
     private val registered = mutableListOf<Command>()
     private val miltonCommand: PassiveCommand? = if (miltonSecret != null) {
@@ -33,13 +33,13 @@ class Dispatcher(private val db: Log?, miltonSecret: String?) {
                 .register(lisp)
                 .register(source)
                 .register(help)
-        this.loadDb()
+        this.loadFromLog()
     }
 
     fun process(message: Message) {
         when (message) {
             is Valid -> {
-                db?.commit(message)
+                log?.commit(message)
                 dispatch(message)
             }
             is Passive -> {
@@ -54,8 +54,8 @@ class Dispatcher(private val db: Log?, miltonSecret: String?) {
         return this
     }
 
-    private fun loadDb() {
-        db?.loadMessagesFromLog()?.forEach {
+    private fun loadFromLog() {
+        log?.loadMessagesFromLog()?.forEach {
             if (it.contents.startsWith("!cl")) {
                 println("Applying lisp: $it")
                 dispatch(it)

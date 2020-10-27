@@ -40,20 +40,20 @@ fun proposeWager(person: String, coffeesFor: Int, coffeesAgainst: Int, termsOfWa
  */
 fun cancelWager(person: String, id: Int): Result {
     return transaction {
-        val before = getCanceledWagers().size
-
-        CoffeeWager.update ({ (CoffeeWager.id eq id)
-                .and( CoffeeWager.person1 eq person)
-                .and(CoffeeWager.state eq WagerState.Proposed)}) {
+        val wager = CoffeeWager.select {
+            (CoffeeWager.id eq id)
+                    .and(CoffeeWager.person1 eq person)
+                    .and(CoffeeWager.state eq WagerState.Proposed)
+        }
+        if (wager.count() != 1L) {
+            return@transaction Result.Failure
+        }
+        CoffeeWager.update({
+            CoffeeWager.id eq id
+        }) {
             it[state] = WagerState.Canceled
         }
-
-        val after = getCanceledWagers().size
-        if (after == before + 1) {
-            Result.Success
-        } else {
-            Result.Failure
-        }
+        Result.Success
     }
 }
 
@@ -89,7 +89,7 @@ fun acceptWager(person: String, id: Int): Result {
 /**
  * Get a Wager by id.
  */
-fun getId(id: Int): ResultRow?  {
+fun getId(id: Int): ResultRow? {
     return transaction {
         CoffeeWager.select {
             CoffeeWager.id eq id
