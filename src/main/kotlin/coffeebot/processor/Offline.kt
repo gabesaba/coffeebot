@@ -1,13 +1,13 @@
 package coffeebot.processor
 
 import coffeebot.commands.Dispatcher
-import coffeebot.database.Database
+import coffeebot.database.Log
 import coffeebot.message.StdoutHandler
 import coffeebot.message.User
 import coffeebot.message.loadMessage
 
 class Offline(miltonSecret: String?): MessageProcessor {
-    private val dispatcher = Dispatcher(Database("offline_db.txt"), miltonSecret)
+    private val dispatcher = Dispatcher(Log("offline_log.txt"), miltonSecret)
 
     override fun run() {
         val syntax = "Syntax:\n\tCOMMAND | switch USERNAME"
