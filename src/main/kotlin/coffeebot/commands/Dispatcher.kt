@@ -67,13 +67,16 @@ class Dispatcher(private val log: Log?, miltonSecret: String?) {
     }
 
     private fun dispatch(message: Valid) {
-        for (command in registered) {
-            if (command.matches(message)) {
+        val command = this.registered.firstOrNull { it.matches(message) }
+        if (command != null) {
+            try {
                 command.handle(message)
-                return
+            } catch (e: Exception) {
+                println("Caught Exception processing $message using $command: $e")
             }
+        } else {
+            invalid.handle(message)
         }
-        invalid.handle(message)
     }
 
     private fun dispatchPassive(message: Passive) {

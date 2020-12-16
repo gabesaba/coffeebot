@@ -1,5 +1,7 @@
 package coffeebot.message
 
+import kotlin.math.min
+
 fun loadMessage(user: User?, contents: String?, handle: Handle): Message {
     return if (contents == null || user == null) {
         Invalid
@@ -16,12 +18,23 @@ interface RepliableMessage {
 }
 
 class RepliableMessageHandle(private val handle: Handle) : RepliableMessage {
+    companion object {
+        private const val MAX_MESSAGE_SIZE = 2000
+    }
+
     override fun reply(message: String) {
-        handle.sendMessage(message)
+        handle.sendMessage(getPrefixToSend(message))
+        if (message.length > MAX_MESSAGE_SIZE) {
+            reply(message.substring(MAX_MESSAGE_SIZE))
+        }
     }
 
     override fun react(emoji: String) {
         handle.react(emoji)
+    }
+
+    private fun getPrefixToSend(message: String): String {
+        return message.substring(0, min(message.length, MAX_MESSAGE_SIZE))
     }
 }
 
