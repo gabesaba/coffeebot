@@ -137,12 +137,13 @@ val list = Command("!list", "List bets") { message ->
     fun formatBet(row: ResultRow): String {
         val betString = StringBuilder()
         val state = row[CoffeeWager.state]
+        val id = row[CoffeeWager.id]
         val person1 = row[CoffeeWager.person1]
         val person2 = row[CoffeeWager.person2]
         val bet1 = Coffee(row[CoffeeWager.coffees1])
         val bet2 = Coffee(row[CoffeeWager.coffees2])
         val terms = row[CoffeeWager.terms]
-        betString.append("    $person1 ")
+        betString.append("    $id: $person1 ")
 
         if (state == WagerState.Proposed) {
             betString.append("wants to bet ")
