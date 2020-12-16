@@ -9,10 +9,12 @@ import coffeelisp.env.eval
 private val sharedEnv = createEnv()
 
 val lisp = Command("!cl", "Eval a CoffeeLisp Expression") {
-    try {
-        val lisp = it.contents.removePrefix("!cl")
-        it.reply(lisp.eval(sharedEnv))
+    val lisp = it.contents.removePrefix("!cl")
+
+    val lispOutput = try {
+        lisp.eval(sharedEnv)
     } catch (e: Exception) {
-        it.reply("$e")
+        e.toString()
     }
+    it.reply(lispOutput)
 }
