@@ -200,8 +200,11 @@ val totals = Command("!totals", "Show coffee debt totals") { message ->
                 } else {
                     Triple(CoffeeWager.person2, CoffeeWager.person1, CoffeeWager.coffees2)
                 }
+        // Make sure fromTo is in lexicographic order so that bets a -> b and b -> a can be summed
+        // together.
+        // Also, the non-null coercion is fine because all Completed wagers have non-null person1 and
+        // person2 entries.
         val (fromTo, inverter) = orderNames(wager[loserCol]!!, wager[winnerCol]!!)
-        // this is fine because all Completed wagers have non-null person1 and person2 entries.
         val current = totals.getOrDefault(fromTo, 0)
         totals[fromTo] = current + wager[coffeesCol] * inverter
     }
