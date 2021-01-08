@@ -32,7 +32,9 @@ class Dispatcher(private val log: Log?, miltonSecret: String?) {
                 .register(adjudicate)
                 .register(list)
                 .register(lisp)
+                .register(payOff)
                 .register(source)
+                .register(totals)
                 .register(help)
         this.loadFromLog()
     }
@@ -58,10 +60,10 @@ class Dispatcher(private val log: Log?, miltonSecret: String?) {
     private fun loadFromLog() {
         log?.loadMessagesFromLog()?.forEach {
             if (it.contents.startsWith("!cl")) {
-                println("Applying lisp: $it")
+                println("[Lisp] Applying lisp: $it")
                 dispatch(it)
             } else {
-                println("Ignoring message: $it")
+                println("[Lisp] Ignoring message: $it")
             }
         }
     }

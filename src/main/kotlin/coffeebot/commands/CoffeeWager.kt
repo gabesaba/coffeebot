@@ -1,15 +1,6 @@
 package coffeebot.commands
 
-import coffeebot.database.CoffeeWager
-import coffeebot.database.Result
-import coffeebot.database.WagerState
-import coffeebot.database.acceptWager
-import coffeebot.database.cancelWager
-import coffeebot.database.getActiveWagers
-import coffeebot.database.getCompletedWagers
-import coffeebot.database.getProposals
-import coffeebot.database.adjudicateWager
-import coffeebot.database.proposeWager
+import coffeebot.database.*
 import coffeebot.message.Valid
 import org.jetbrains.exposed.sql.ResultRow
 import java.lang.StringBuilder
@@ -19,6 +10,7 @@ private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
+private val payOffRegex = Regex("!pay ([0-9]+)")
 
 private const val coffeeSuffix = "cups of coffee"
 
@@ -132,6 +124,21 @@ val adjudicate = Command("!adjudicate", "Adjudicate a bet. !adjudicate ID WINNER
     }
 }
 
+val payOff = Command("!pay", "Mark a bet as having been paid off") {message ->
+    val idString = payOffRegex.matchEntire(message.contents)?.groupValues?.getOrNull(1)
+    if (idString == null) {
+        message.reply("Expecting !pay ID")
+        return@Command
+    }
+
+    val id = idString.toInt()
+    if (payOffWager(id) == Result.Success) {
+        message.reply("Bet $id marked as paid off")
+    } else {
+        message.reply("Failed to mark bet $id as paid off")
+    }
+}
+
 val list = Command("!list", "List bets") { message ->
 
     fun formatBet(row: ResultRow): String {
@@ -175,6 +182,58 @@ val list = Command("!list", "List bets") { message ->
     reply.append(formatRows("Proposals", getProposals()))
     reply.append(formatRows("Active", getActiveWagers()))
     reply.append(formatRows("Completed", getCompletedWagers()))
+    // TODO do we want to hide paid off wagers instead? This could declutter the lists
+    reply.append(formatRows("Paid off", getPaidOffWagers()))
     message.reply(reply.toString())
 }
 
+typealias FromTo = Pair<String, String>
+
+val totals = Command("!totals", "Show coffee debt totals") { message ->
+    val wagers = getCompletedWagers()
+    val totals: MutableMap<FromTo, Int> = mutableMapOf()
+
+    for (wager in wagers) {
+        val (winnerCol, loserCol, coffeesCol) =
+                if (wager[CoffeeWager.winner] == wager[CoffeeWager.person1]) {
+                    Triple(CoffeeWager.person1, CoffeeWager.person2, CoffeeWager.coffees1)
+                } else {
+                    Triple(CoffeeWager.person2, CoffeeWager.person1, CoffeeWager.coffees2)
+                }
+        val (fromTo, inverter) = orderNames(wager[loserCol]!!, wager[winnerCol]!!)
+        // this is fine because all Completed wagers have non-null person1 and person2 entries.
+        val current = totals.getOrDefault(fromTo, 0)
+        totals[fromTo] = current + wager[coffeesCol] * inverter
+    }
+
+    val reply = StringBuilder()
+    for (entry in totals) {
+        val (name1, name2, balance) =
+                ensurePositiveBalance(entry.key.first, entry.key.second, entry.value)
+        reply.append("$name1 owes $name2 $balance coffees\n")
+    }
+    message.reply(reply.toString())
+}
+
+/**
+ * Returns a pair (fromTo, inverter) such that
+ *  - the two names in fromTo are in lexicographic order
+ *  - inverter is 1 if name1 and name2 are in lexicographic order too, or -1 otherwise.
+ */
+fun orderNames(name1: String, name2: String): Pair<FromTo, Int> =
+        if (name1 < name2) {
+            Pair(Pair(name1, name2), 1)
+        } else {
+            Pair(Pair(name2, name1), -1)
+        }
+
+/**
+ * Given two names and a balance that name1 owes name2, ensures the balance is positive
+ * by possibly inverting the names.
+ */
+fun ensurePositiveBalance(name1: String, name2: String, nCoffees: Int): Triple<String, String, Int> =
+        if (nCoffees < 0) {
+            Triple(name2, name1, -nCoffees)
+        } else {
+            Triple(name1, name2, nCoffees)
+        }
