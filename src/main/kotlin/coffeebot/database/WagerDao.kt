@@ -1,13 +1,7 @@
 package coffeebot.database
 
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 
 // Represents result of a transaction.
 sealed class Result {
@@ -111,24 +105,6 @@ fun adjudicateWager(id: Int, whoWon: String): Result {
 }
 
 /**
- * Mark a wager as having been paid off.
- * @param id: Id of wager to make as paid off
- * @return: Whether or not the wager was successfully marked as paid off
- */
-fun payOffWager(id: Int): Result {
-    return transaction {
-        val modified = CoffeeWager.update({ CoffeeWager.id eq id }) {
-            it[state] = WagerState.PaidOff
-        }
-        return@transaction if (modified == 1) {
-            Result.Success
-        } else {
-            Result.Failure
-        }
-    }
-}
-
-/**
  * Get a Wager by id.
  */
 fun getId(id: Int): ResultRow? {
@@ -159,13 +135,92 @@ fun getCanceledWagers(): List<ResultRow> = getRowsInState(WagerState.Canceled)
  */
 fun getCompletedWagers(): List<ResultRow> = getRowsInState(WagerState.Completed)
 
-/**
- * Get paid off wagers, sorted by id.
- */
-fun getPaidOffWagers(): List<ResultRow> = getRowsInState(WagerState.PaidOff)
-
 private fun getRowsInState(state: WagerState): List<ResultRow> {
     return transaction {
         CoffeeWager.select { CoffeeWager.state eq state }.sortedBy { CoffeeWager.id }
+    }
+}
+
+fun getPayments(): Iterable<OrderedPayment> = transaction {
+    CoffeePayment.selectAll().map {
+        OrderedPayment(it[CoffeePayment.from], it[CoffeePayment.to], it[CoffeePayment.amount])
+    }
+}
+
+fun addPayment(payment: Payment): Result = transaction {
+    val ordered = payment.toOrdered()
+    // TODO why do I have to call `execute` here?
+    val inserted = CoffeePayment.insertIgnore {
+        it[from] = ordered.from
+        it[to] = ordered.to
+        it[amount] = ordered.amount
+    }.execute(this)!!
+    if (inserted == 1) {
+        return@transaction Result.Success
+    }
+    val modified = CoffeePayment.update({ CoffeePayment.from eq ordered.from and (CoffeePayment.to eq ordered.to) }) {
+        it.update(amount, Expression.build { amount.plus(ordered.amount) })
+    }
+    return@transaction if (modified == 1) {
+        Result.Success
+    } else {
+        Result.Failure
+    }
+}
+
+/**
+ * Holds a payment (or debt, or balance) with a source user, a target user, and an amount.
+ *
+ * These values can't be extracted until the payment is converted to a PositivePayment or an OrderedPayment,
+ * which are two ways to represent the same logical payment.
+ */
+interface Payment {
+    fun toOrdered(): OrderedPayment
+    fun toPositive(): PositivePayment
+
+    companion object {
+        fun payment(from: String, to: String, amount: Int): Payment = if (amount >= 0) {
+            PositivePayment(from, to, amount)
+        } else {
+            PositivePayment(to, from, -amount)
+        }
+    }
+}
+
+/**
+ * A Payment where the payment amount is non-negative.
+ */
+data class PositivePayment(val from: String, val to: String, val amount: Int) : Payment {
+    init {
+        if (amount < 0) {
+            throw IllegalArgumentException("PositivePayment amount must be non-negative, got $amount")
+        }
+    }
+
+    override fun toOrdered(): OrderedPayment = if (from <= to) {
+        OrderedPayment(from, to, amount)
+    } else {
+        OrderedPayment(to, from, -amount)
+    }
+
+    override fun toPositive(): PositivePayment = this
+}
+
+/**
+ * A payment where `from` is lexicographically smaller or equal to `to`. `amount` can be negative.
+ */
+data class OrderedPayment(val from: String, val to: String, val amount: Int) : Payment {
+    init {
+        if (to < from) {
+            throw IllegalArgumentException("OrderedPayment `from` ($from) must be smaller than `to` ($to)")
+        }
+    }
+
+    override fun toOrdered(): OrderedPayment = this
+
+    override fun toPositive(): PositivePayment = if (amount >= 0) {
+        PositivePayment(from, to, amount)
+    } else {
+        PositivePayment(to, from, -amount)
     }
 }

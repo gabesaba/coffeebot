@@ -32,7 +32,7 @@ class Dispatcher(private val log: Log?, miltonSecret: String?) {
                 .register(adjudicate)
                 .register(list)
                 .register(lisp)
-                .register(payOff)
+                .register(pay)
                 .register(source)
                 .register(totals)
                 .register(help)

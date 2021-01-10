@@ -10,7 +10,7 @@ private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
-private val payOffRegex = Regex("!pay ([0-9]+)")
+private val payOffRegex = Regex("!pay (\\w+) ([0-9]+)")
 
 private const val coffeeSuffix = "cups of coffee"
 
@@ -124,18 +124,21 @@ val adjudicate = Command("!adjudicate", "Adjudicate a bet. !adjudicate ID WINNER
     }
 }
 
-val payOff = Command("!pay", "Mark a bet as having been paid off") {message ->
-    val idString = payOffRegex.matchEntire(message.contents)?.groupValues?.getOrNull(1)
-    if (idString == null) {
-        message.reply("Expecting !pay ID")
+val pay = Command("!pay", "Register a coffee payment to another user") { message ->
+    val groups = payOffRegex.matchEntire(message.contents)?.groupValues
+    val payeeName = groups?.getOrNull(1)
+    val amountString = groups?.getOrNull(2)
+    if (payeeName == null || amountString == null) {
+        message.reply("Expecting !pay USER AMOUNT")
         return@Command
     }
 
-    val id = idString.toInt()
-    if (payOffWager(id) == Result.Success) {
-        message.reply("Bet $id marked as paid off")
+    val payerName = message.user.name
+    val amount = amountString.toInt()
+    if (addPayment(PositivePayment(payerName, payeeName, amount)) == Result.Success) {
+        message.reply("$payerName paid $payeeName ${Coffee(amount)}")
     } else {
-        message.reply("Failed to mark bet $id as paid off")
+        message.reply("Failed to add payment between $payerName and $payeeName")
     }
 }
 
@@ -182,16 +185,15 @@ val list = Command("!list", "List bets") { message ->
     reply.append(formatRows("Proposals", getProposals()))
     reply.append(formatRows("Active", getActiveWagers()))
     reply.append(formatRows("Completed", getCompletedWagers()))
-    // TODO do we want to hide paid off wagers instead? This could declutter the lists
-    reply.append(formatRows("Paid off", getPaidOffWagers()))
     message.reply(reply.toString())
 }
 
-typealias FromTo = Pair<String, String>
+data class FromTo(val from: String, val to: String)
 
 val totals = Command("!totals", "Show coffee debt totals") { message ->
     val wagers = getCompletedWagers()
-    val totals: MutableMap<FromTo, Int> = mutableMapOf()
+    val payments = getPayments().toMutableList()
+    val totalPayments: MutableMap<FromTo, Int> = mutableMapOf()
 
     for (wager in wagers) {
         val (winnerCol, loserCol, coffeesCol) =
@@ -200,43 +202,20 @@ val totals = Command("!totals", "Show coffee debt totals") { message ->
                 } else {
                     Triple(CoffeeWager.person2, CoffeeWager.person1, CoffeeWager.coffees2)
                 }
-        // Make sure fromTo is in lexicographic order so that bets a -> b and b -> a can be summed
-        // together.
-        // Also, the non-null coercion is fine because all Completed wagers have non-null person1 and
-        // person2 entries.
-        val (fromTo, inverter) = orderNames(wager[loserCol]!!, wager[winnerCol]!!)
-        val current = totals.getOrDefault(fromTo, 0)
-        totals[fromTo] = current + wager[coffeesCol] * inverter
+        // We treat a debt as a negative payment, i.e. we pretend the winner has paid the loser `n` coffees.
+        val paymentDue = Payment.payment(wager[winnerCol]!!, wager[loserCol]!!, wager[coffeesCol]).toOrdered()
+        payments.add(paymentDue)
+    }
+
+    for (payment in payments) {
+        val fromTo = FromTo(payment.from, payment.to)
+        totalPayments[fromTo] = totalPayments.getOrDefault(fromTo, 0) + payment.amount
     }
 
     val reply = StringBuilder()
-    for (entry in totals) {
-        val (name1, name2, balance) =
-                ensurePositiveBalance(entry.key.first, entry.key.second, entry.value)
-        reply.append("$name1 owes $name2 $balance coffees\n")
+    for (entry in totalPayments) {
+        val total = Payment.payment(entry.key.from, entry.key.to, -entry.value).toPositive()
+        reply.append("${total.from} owes ${total.to} ${total.amount} coffees\n")
     }
     message.reply(reply.toString())
 }
-
-/**
- * Returns a pair (fromTo, inverter) such that
- *  - the two names in fromTo are in lexicographic order
- *  - inverter is 1 if name1 and name2 are in lexicographic order too, or -1 otherwise.
- */
-fun orderNames(name1: String, name2: String): Pair<FromTo, Int> =
-        if (name1 < name2) {
-            Pair(Pair(name1, name2), 1)
-        } else {
-            Pair(Pair(name2, name1), -1)
-        }
-
-/**
- * Given two names and a balance that name1 owes name2, ensures the balance is positive
- * by possibly inverting the names.
- */
-fun ensurePositiveBalance(name1: String, name2: String, nCoffees: Int): Triple<String, String, Int> =
-        if (nCoffees < 0) {
-            Triple(name2, name1, -nCoffees)
-        } else {
-            Triple(name1, name2, nCoffees)
-        }
