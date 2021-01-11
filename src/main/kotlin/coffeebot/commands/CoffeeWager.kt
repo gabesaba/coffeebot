@@ -10,7 +10,7 @@ private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
-private val payOffRegex = Regex("!pay (\\w+) ([0-9]+)")
+private val payRegex = Regex("!pay (\\w+) ([0-9]+)")
 
 private const val coffeeSuffix = "cups of coffee"
 
@@ -125,7 +125,7 @@ val adjudicate = Command("!adjudicate", "Adjudicate a bet. !adjudicate ID WINNER
 }
 
 val pay = Command("!pay", "Register a coffee payment to another user") { message ->
-    val groups = payOffRegex.matchEntire(message.contents)?.groupValues
+    val groups = payRegex.matchEntire(message.contents)?.groupValues
     val payeeName = groups?.getOrNull(1)
     val amountString = groups?.getOrNull(2)
     if (payeeName == null || amountString == null) {
@@ -192,7 +192,7 @@ data class FromTo(val from: String, val to: String)
 
 val totals = Command("!totals", "Show coffee debt totals") { message ->
     val wagers = getCompletedWagers()
-    val payments = getPayments().toMutableList()
+    val payments = getPaymentBalances().toMutableList()
     val totalPayments: MutableMap<FromTo, Int> = mutableMapOf()
 
     for (wager in wagers) {
@@ -215,7 +215,9 @@ val totals = Command("!totals", "Show coffee debt totals") { message ->
     val reply = StringBuilder()
     for (entry in totalPayments) {
         val total = Payment.payment(entry.key.from, entry.key.to, -entry.value).toPositive()
-        reply.append("${total.from} owes ${total.to} ${total.amount} coffees\n")
+        if (total.amount != 0) {
+            reply.append("${total.from} owes ${total.to} ${total.amount} coffees\n")
+        }
     }
     message.reply(reply.toString())
 }

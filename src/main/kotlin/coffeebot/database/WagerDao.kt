@@ -131,7 +131,7 @@ fun getActiveWagers(): List<ResultRow> = getRowsInState(WagerState.Accepted)
 fun getCanceledWagers(): List<ResultRow> = getRowsInState(WagerState.Canceled)
 
 /**
- * Get completed wagers that haven't been paid off, sorted by id.
+ * Get completed wagers, sorted by id.
  */
 fun getCompletedWagers(): List<ResultRow> = getRowsInState(WagerState.Completed)
 
@@ -141,15 +141,24 @@ private fun getRowsInState(state: WagerState): List<ResultRow> {
     }
 }
 
-fun getPayments(): Iterable<OrderedPayment> = transaction {
+/**
+ * Get all payment balances. There is at most one balance between each unordered pair of people.
+ *
+ * They represent the balance between users *when taking payments only into account*; debts or
+ * credits resulting from wagers are not counted in these balances.
+ */
+fun getPaymentBalances(): Iterable<OrderedPayment> = transaction {
     CoffeePayment.selectAll().map {
         OrderedPayment(it[CoffeePayment.from], it[CoffeePayment.to], it[CoffeePayment.amount])
     }
 }
 
+/**
+ * Add a payment to the database. It will be added to the existing balance between the two
+ * people involved.
+ */
 fun addPayment(payment: Payment): Result = transaction {
     val ordered = payment.toOrdered()
-    // TODO why do I have to call `execute` here?
     val inserted = CoffeePayment.insertIgnore {
         it[from] = ordered.from
         it[to] = ordered.to
@@ -169,7 +178,7 @@ fun addPayment(payment: Payment): Result = transaction {
 }
 
 /**
- * Holds a payment (or debt, or balance) with a source user, a target user, and an amount.
+ * Holds a payment (or debt, or balance) with a source user, a destination user, and an amount.
  *
  * These values can't be extracted until the payment is converted to a PositivePayment or an OrderedPayment,
  * which are two ways to represent the same logical payment.
