@@ -1,6 +1,7 @@
 package coffeebot.database
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 // Represents result of a transaction.
@@ -147,10 +148,40 @@ private fun getRowsInState(state: WagerState): List<ResultRow> {
  * They represent the balance between users *when taking payments only into account*; debts or
  * credits resulting from wagers are not counted in these balances.
  */
-fun getPaymentBalances(): Iterable<OrderedPayment> = transaction {
+private fun getPaymentBalances(): Iterable<OrderedPayment> = transaction {
     CoffeePayment.selectAll().map {
-        OrderedPayment(it[CoffeePayment.from], it[CoffeePayment.to], it[CoffeePayment.amount])
+        OrderedPayment(it[CoffeePayment.from], it[CoffeePayment.to], it[CoffeePayment.coffees])
     }
+}
+
+data class FromTo(val from: String, val to: String)
+
+/**
+ * Returns a list of Payment objects, each representing the payment needed to balance
+ * the debt between a pair of users.
+ */
+fun getBalancePayments(): List<Payment> {
+    val payments = getPaymentBalances().toMutableList()
+    val totalPayments: MutableMap<FromTo, Int> = mutableMapOf()
+
+    getCompletedWagers().forEach { wager ->
+        val (winnerCol, loserCol, coffeesCol) =
+                if (wager[CoffeeWager.winner] == wager[CoffeeWager.person1]) {
+                    Triple(CoffeeWager.person1, CoffeeWager.person2, CoffeeWager.coffees2)
+                } else {
+                    Triple(CoffeeWager.person2, CoffeeWager.person1, CoffeeWager.coffees1)
+                }
+        // We treat a loss as a negative payment, i.e. we pretend the winner has paid the loser `n` coffees.
+        val paymentDue = Payment.payment(wager[winnerCol]!!, wager[loserCol]!!, wager[coffeesCol]).toOrdered()
+        payments.add(paymentDue)
+    }
+
+    for (payment in payments) {
+        val fromTo = FromTo(payment.from, payment.to)
+        totalPayments[fromTo] = totalPayments.getOrDefault(fromTo, 0) - payment.amount
+    }
+
+    return totalPayments.entries.map { Payment.payment(it.key.from, it.key.to, it.value) }
 }
 
 /**
@@ -159,22 +190,20 @@ fun getPaymentBalances(): Iterable<OrderedPayment> = transaction {
  */
 fun addPayment(payment: Payment): Result = transaction {
     val ordered = payment.toOrdered()
-    val inserted = CoffeePayment.insertIgnore {
-        it[from] = ordered.from
-        it[to] = ordered.to
-        it[amount] = ordered.amount
-    }.execute(this)!!
-    if (inserted == 1) {
-        return@transaction Result.Success
-    }
-    val modified = CoffeePayment.update({ CoffeePayment.from eq ordered.from and (CoffeePayment.to eq ordered.to) }) {
-        it.update(amount, Expression.build { amount.plus(ordered.amount) })
-    }
-    return@transaction if (modified == 1) {
-        Result.Success
+    val selector = CoffeePayment.from eq ordered.from and (CoffeePayment.to eq ordered.to)
+    val exists = CoffeePayment.select { selector }.count() > 0
+    if (exists) {
+        CoffeePayment.update({ selector }) {
+            it.update(coffees, Expression.build { coffees.plus(ordered.amount) })
+        }
     } else {
-        Result.Failure
+        CoffeePayment.insert {
+            it[from] = ordered.from
+            it[to] = ordered.to
+            it[coffees] = ordered.amount
+        }
     }
+    Result.Success
 }
 
 /**
@@ -201,6 +230,9 @@ interface Payment {
  */
 data class PositivePayment(val from: String, val to: String, val amount: Int) : Payment {
     init {
+        if (from == to) {
+            throw IllegalArgumentException("PositivePayment from and to must be different, got $from for both.")
+        }
         if (amount < 0) {
             throw IllegalArgumentException("PositivePayment amount must be non-negative, got $amount")
         }
@@ -220,7 +252,7 @@ data class PositivePayment(val from: String, val to: String, val amount: Int) : 
  */
 data class OrderedPayment(val from: String, val to: String, val amount: Int) : Payment {
     init {
-        if (to < from) {
+        if (to <= from) {
             throw IllegalArgumentException("OrderedPayment `from` ($from) must be smaller than `to` ($to)")
         }
     }

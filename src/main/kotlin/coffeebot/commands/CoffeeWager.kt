@@ -10,7 +10,7 @@ private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
-private val payRegex = Regex("!pay (\\w+) ([0-9]+)")
+private val payRegex = Regex("!pay (\\w+) $coffeeRegex")
 
 private const val coffeeSuffix = "cups of coffee"
 
@@ -23,6 +23,14 @@ data class Coffee(val num: Int) {
     }
 }
 
+fun String.toCoffee() = Coffee(
+        when (this) {
+            "a", "one"-> 1
+            "two" -> 2
+            "three" -> 3
+            else -> this.toInt()
+        })
+
 val bet = Command("!bet", "Initiate a coffee bet") { message ->
     if (message.contents == "!bet show_regex") {
         message.reply("Regex: $betRegex")
@@ -33,15 +41,6 @@ val bet = Command("!bet", "Initiate a coffee bet") { message ->
         message.reply("Invalid Syntax. Try \"!bet [1-7] to [1-7]" +
                 " cups of coffee that X\", or type !bet show_regex")
         return@Command
-    }
-
-    fun String.toCoffee(): Coffee {
-        return Coffee(when (this) {
-            "a", "one"-> 1
-            "two" -> 2
-            "three" -> 3
-            else -> this.toInt()
-        })
     }
 
     val coffee1 = groups[1].toCoffee()
@@ -126,15 +125,19 @@ val adjudicate = Command("!adjudicate", "Adjudicate a bet. !adjudicate ID WINNER
 
 val pay = Command("!pay", "Register a coffee payment to another user") { message ->
     val groups = payRegex.matchEntire(message.contents)?.groupValues
-    val payeeName = groups?.getOrNull(1)
-    val amountString = groups?.getOrNull(2)
-    if (payeeName == null || amountString == null) {
-        message.reply("Expecting !pay USER AMOUNT")
+    if (groups == null) {
+        message.reply("Expecting !pay USER AMOUNT. AMOUNTS accepts [1-7]; see `!bet show_regex` for advanced syntax.")
         return@Command
     }
 
+    val payeeName = groups[1]
+    val amount = groups[2].toCoffee().num
     val payerName = message.user.name
-    val amount = amountString.toInt()
+    if (payerName == payeeName) {
+        message.reply("Can't pay coffees to yourself")
+        return@Command
+    }
+
     if (addPayment(PositivePayment(payerName, payeeName, amount)) == Result.Success) {
         message.reply("$payerName paid $payeeName ${Coffee(amount)}")
     } else {
@@ -188,33 +191,10 @@ val list = Command("!list", "List bets") { message ->
     message.reply(reply.toString())
 }
 
-data class FromTo(val from: String, val to: String)
-
 val totals = Command("!totals", "Show coffee debt totals") { message ->
-    val wagers = getCompletedWagers()
-    val payments = getPaymentBalances().toMutableList()
-    val totalPayments: MutableMap<FromTo, Int> = mutableMapOf()
-
-    for (wager in wagers) {
-        val (winnerCol, loserCol, coffeesCol) =
-                if (wager[CoffeeWager.winner] == wager[CoffeeWager.person1]) {
-                    Triple(CoffeeWager.person1, CoffeeWager.person2, CoffeeWager.coffees1)
-                } else {
-                    Triple(CoffeeWager.person2, CoffeeWager.person1, CoffeeWager.coffees2)
-                }
-        // We treat a debt as a negative payment, i.e. we pretend the winner has paid the loser `n` coffees.
-        val paymentDue = Payment.payment(wager[winnerCol]!!, wager[loserCol]!!, wager[coffeesCol]).toOrdered()
-        payments.add(paymentDue)
-    }
-
-    for (payment in payments) {
-        val fromTo = FromTo(payment.from, payment.to)
-        totalPayments[fromTo] = totalPayments.getOrDefault(fromTo, 0) + payment.amount
-    }
-
     val reply = StringBuilder()
-    for (entry in totalPayments) {
-        val total = Payment.payment(entry.key.from, entry.key.to, -entry.value).toPositive()
+    for (balancePayment in getBalancePayments()) {
+        val total = balancePayment.toPositive()
         if (total.amount != 0) {
             reply.append("${total.from} owes ${total.to} ${total.amount} coffees\n")
         }

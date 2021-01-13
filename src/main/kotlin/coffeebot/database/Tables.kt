@@ -8,7 +8,7 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import java.sql.Connection
 
-val NAME_LENGTH = 50
+private const val NAME_LENGTH = 50
 
 enum class WagerState {
     Proposed,
@@ -33,9 +33,9 @@ object CoffeeWager: IntIdTable() {
  * Invariant: `from` < `to` in lexicographic order
  */
 object CoffeePayment: Table() {
-    val from = varchar("erson1", NAME_LENGTH)
-    val to = varchar("person1", NAME_LENGTH)
-    val amount = integer("amount")
+    val from = varchar("from", NAME_LENGTH)
+    val to = varchar("to", NAME_LENGTH)
+    val coffees = integer("coffees")
 
     override val primaryKey = PrimaryKey(from, to)
 }
