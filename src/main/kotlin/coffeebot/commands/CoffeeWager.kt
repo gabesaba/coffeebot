@@ -1,15 +1,6 @@
 package coffeebot.commands
 
-import coffeebot.database.CoffeeWager
-import coffeebot.database.Result
-import coffeebot.database.WagerState
-import coffeebot.database.acceptWager
-import coffeebot.database.cancelWager
-import coffeebot.database.getActiveWagers
-import coffeebot.database.getCompletedWagers
-import coffeebot.database.getProposals
-import coffeebot.database.adjudicateWager
-import coffeebot.database.proposeWager
+import coffeebot.database.*
 import coffeebot.message.Valid
 import org.jetbrains.exposed.sql.ResultRow
 import java.lang.StringBuilder
@@ -19,6 +10,7 @@ private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
 private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
+private val payRegex = Regex("!pay (\\w+) $coffeeRegex")
 
 private const val coffeeSuffix = "cups of coffee"
 
@@ -31,6 +23,14 @@ data class Coffee(val num: Int) {
     }
 }
 
+fun String.toCoffee() = Coffee(
+        when (this) {
+            "a", "one"-> 1
+            "two" -> 2
+            "three" -> 3
+            else -> this.toInt()
+        })
+
 val bet = Command("!bet", "Initiate a coffee bet") { message ->
     if (message.contents == "!bet show_regex") {
         message.reply("Regex: $betRegex")
@@ -41,15 +41,6 @@ val bet = Command("!bet", "Initiate a coffee bet") { message ->
         message.reply("Invalid Syntax. Try \"!bet [1-7] to [1-7]" +
                 " cups of coffee that X\", or type !bet show_regex")
         return@Command
-    }
-
-    fun String.toCoffee(): Coffee {
-        return Coffee(when (this) {
-            "a", "one"-> 1
-            "two" -> 2
-            "three" -> 3
-            else -> this.toInt()
-        })
     }
 
     val coffee1 = groups[1].toCoffee()
@@ -132,6 +123,28 @@ val adjudicate = Command("!adjudicate", "Adjudicate a bet. !adjudicate ID WINNER
     }
 }
 
+val pay = Command("!pay", "Register a coffee payment to another user") { message ->
+    val groups = payRegex.matchEntire(message.contents)?.groupValues
+    if (groups == null) {
+        message.reply("Expecting !pay USER AMOUNT. AMOUNTS accepts [1-7]; see `!bet show_regex` for advanced syntax.")
+        return@Command
+    }
+
+    val payeeName = groups[1]
+    val amount = groups[2].toCoffee().num
+    val payerName = message.user.name
+    if (payerName == payeeName) {
+        message.reply("Can't pay coffees to yourself")
+        return@Command
+    }
+
+    if (addPayment(PositivePayment(payerName, payeeName, amount)) == Result.Success) {
+        message.reply("$payerName paid $payeeName ${Coffee(amount)}")
+    } else {
+        message.reply("Failed to add payment between $payerName and $payeeName")
+    }
+}
+
 val list = Command("!list", "List bets") { message ->
 
     fun formatBet(row: ResultRow): String {
@@ -178,3 +191,13 @@ val list = Command("!list", "List bets") { message ->
     message.reply(reply.toString())
 }
 
+val totals = Command("!totals", "Show coffee debt totals") { message ->
+    val reply = StringBuilder()
+    for (balancePayment in getBalancePayments()) {
+        val total = balancePayment.toPositive()
+        if (total.amount != 0) {
+            reply.append("${total.from} owes ${total.to} ${total.amount} coffees\n")
+        }
+    }
+    message.reply(reply.toString())
+}
