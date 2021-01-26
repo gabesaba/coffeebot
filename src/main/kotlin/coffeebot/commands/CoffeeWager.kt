@@ -5,12 +5,13 @@ import coffeebot.message.Valid
 import org.jetbrains.exposed.sql.ResultRow
 import java.lang.StringBuilder
 
+private val userRegex = Regex("\\w+")
 private val coffeeRegex = Regex("(a|one|two|three|[1-7])(?: cups?(?: of)?)?(?: coffees?)?")
 private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")
-private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ([A-Za-z]+)")
-private val payRegex = Regex("!pay (\\w+) $coffeeRegex")
+private val payRegex = Regex("!pay ($userRegex) $coffeeRegex")
+private val adjudicateRegex = Regex("!adjudicate ([0-9]+) ($userRegex)")
 
 private const val coffeeSuffix = "cups of coffee"
 
@@ -126,7 +127,7 @@ val adjudicate = Command("!adjudicate", "Adjudicate a bet. !adjudicate ID WINNER
 val pay = Command("!pay", "Register a coffee payment to another user") { message ->
     val groups = payRegex.matchEntire(message.contents)?.groupValues
     if (groups == null) {
-        message.reply("Expecting !pay USER AMOUNT. AMOUNTS accepts [1-7]; see `!bet show_regex` for advanced syntax.")
+        message.reply("Expecting !pay USER NUM_COFFEES")
         return@Command
     }
 

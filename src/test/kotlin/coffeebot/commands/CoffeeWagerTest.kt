@@ -255,6 +255,16 @@ class CoffeeWagerTest {
         testWording("!bet two cups that x")
     }
 
+    @Test
+    fun testAcceptBet() {
+        val dispatcher = Dispatcher(null, null)
+
+        assertEquals(getActiveWagers().size, 0)
+        dispatcher.process(createMessage("gAb3", "!bet 1 coffee that x"))
+        dispatcher.process(createMessage("m4tt", "!accept 1"))
+        assertEquals(getActiveWagers().size, 1)
+    }
+
     private fun createMessage(name: String, message: String): Message {
         return Valid(User(name), message, RepliableMessageHandle(NullHandle))
     }
