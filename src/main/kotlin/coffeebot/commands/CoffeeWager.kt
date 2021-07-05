@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import java.lang.StringBuilder
 
 private val userRegex = Regex("\\w+")
-private val coffeeRegex = Regex("(a|one|two|three|[1-7])(?: cups?(?: of)?)?(?: coffees?)?")
+private val coffeeRegex = Regex("(a|one|two|three|[0-2]?[0-9])(?: cups?(?: of)?)?(?: coffees?)?")
 private val betRegex = Regex("!bet $coffeeRegex (?:to $coffeeRegex )?that (.+)")
 private val cancelRegex = Regex("!cancel ([0-9]+)")
 private val acceptRegex = Regex("!accept ([0-9]+)")

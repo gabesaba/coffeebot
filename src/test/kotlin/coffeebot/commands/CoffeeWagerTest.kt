@@ -256,6 +256,22 @@ class CoffeeWagerTest {
     }
 
     @Test
+    fun test29CoffeesAllowed() {
+        val dispatcher = Dispatcher(null, null)
+        dispatcher.process(createMessage("felix", "!bet 29 to 1 that jeff"))
+
+        assertEquals(1, getProposals().size)
+    }
+
+    @Test
+    fun test30CoffeesDisallowed() {
+        val dispatcher = Dispatcher(null, null)
+        dispatcher.process(createMessage("felix", "!bet 30 to 1 that jeff"))
+
+        assertEquals(0, getProposals().size)
+    }
+
+    @Test
     fun testAcceptBet() {
         val dispatcher = Dispatcher(null, null)
 
