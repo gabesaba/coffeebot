@@ -20,9 +20,12 @@ class Online(private val token: String, miltonSecret: String?) : MessageProcesso
                 .subscribe { ready -> println("Logged in as " + ready.self.username) }
 
         client.eventDispatcher.on(MessageCreateEvent::class.java)
-                .subscribe {
+            .map {
                     dispatcher.process(it.toCoffeeBotMessage())
-                }
+            }
+            .doOnError { it.printStackTrace() }
+            .retry()
+            .subscribe()
 
         println("Attempting to log on")
         try {
