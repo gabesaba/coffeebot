@@ -1,17 +1,16 @@
 plugins {
-    kotlin("jvm") version "1.3.72"
+    kotlin("jvm") version "1.7.21"
     application
 }
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
-val ktorVersion = "1.3.2"
+val ktorVersion = "1.6.8"
+val exposedVersion = "0.41.1"
 
 dependencies {
-    implementation(kotlin("stdlib"))
-
     // Discord
     implementation("com.discord4j:discord4j-core:3.0.14")
 
@@ -29,8 +28,8 @@ dependencies {
     }
 
     // Database
-    implementation("org.jetbrains.exposed", "exposed-core", "0.28.1")
-    implementation("org.jetbrains.exposed", "exposed-jdbc", "0.28.1")
+    implementation("org.jetbrains.exposed", "exposed-core", exposedVersion)
+    implementation("org.jetbrains.exposed", "exposed-jdbc", exposedVersion)
     implementation("org.xerial:sqlite-jdbc:3.32.3.2")
 
     // Testing
